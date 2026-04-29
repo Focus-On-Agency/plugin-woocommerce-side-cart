@@ -1,0 +1,14 @@
+# Docker
+.docker/
+docker-compose.yml
+
+# Node
+node_modules/
+.venv/
+scripts/__pycache__/
+
+# Build artifacts
+/assets/js/*.min.js
+
+# AI
+.trae/

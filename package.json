@@ -1,0 +1,32 @@
+{
+	"name": "woocommerce-side-cart",
+	"private": true,
+	"version": "2.0.0",
+	"scripts": {
+		"build": "esbuild src/js/index.js --bundle --format=iife --target=es5 --outfile=assets/js/woocommerce_side_cart.js && esbuild src/js/index.js --bundle --format=iife --target=es5 --minify --legal-comments=none --outfile=assets/js/woocommerce_side_cart.min.js",
+		"lint:js": "eslint \"src/js/**/*.js\"",
+		"ci": "npm run lint:js && npm run build"
+	},
+	"devDependencies": {
+		"esbuild": "^0.25.0",
+		"eslint": "^8.57.0"
+	},
+	"eslintConfig": {
+		"root": true,
+		"env": {
+			"browser": true,
+			"node": false
+		},
+		"parserOptions": {
+			"ecmaVersion": 2020,
+			"sourceType": "module"
+		},
+		"rules": {
+			"no-unused-vars": "off",
+			"no-undef": "off",
+			"no-redeclare": "off",
+			"no-var": "off",
+			"prefer-const": "off"
+		}
+	}
+}
