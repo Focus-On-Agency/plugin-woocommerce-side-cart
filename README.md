@@ -1,77 +1,77 @@
 # WooCommerce Side Cart (Drawer)
 
-Plugin WooCommerce che aggiunge un **side cart in stile drawer** (overlay + backdrop) con aggiornamenti del carrello via **WooCommerce Store API** e UI moderna **senza jQuery**.
+WooCommerce plugin that adds a **drawer-style side cart** (overlay + backdrop) with cart updates via the **WooCommerce Store API** and a modern UI **without jQuery**.
 
-Il rendering della UI è principalmente **client-side**: il markup server è un contenitore stabile, mentre items/totals/coupon vengono (ri)costruiti dal renderer JS in base ai dati del carrello.
+The UI rendering is mainly **client-side**: the server markup is a stable container, while items/totals/coupons are (re)built by the JS renderer based on the cart payload.
 
-## Caratteristiche
+## Features
 
-- Drawer in overlay, backdrop e scroll-lock
-- Aggiornamenti carrello via Store API (`/wp-json/wc/store/v1/cart/...`)
-- Editing quantità con stepper (opzionale) e rimozione item
-- UI minimal/editoriale basata su **CSS variables** (token `--wcsc-*`)
-- Estendibilità:
-  - classi extra via config (`cssClasses`)
-  - hook HTML “privilegiati” via config (`hooksHtml`) + policy di sanitizzazione
-  - override renderer lato client (avanzato)
+- Drawer overlay, backdrop, and scroll lock
+- Cart updates via Store API (`/wp-json/wc/store/v1/cart/...`)
+- Quantity editing with stepper (optional) and item removal
+- Minimal/editorial UI driven by **CSS variables** (tokens `--wcsc-*`)
+- Extensible via:
+  - extra classes via config (`cssClasses`)
+  - “privileged” HTML hooks via config (`hooksHtml`) + sanitization policy
+  - client-side renderer overrides (advanced)
 
-## Struttura del progetto
+## Project structure
 
-- `assets/css/woocommerce_side_cart.base.css`: stile base del drawer (token + layout + componenti)
-- `assets/js/woocommerce_side_cart(.min).js`: bundle compilato
-- `src/js/`: sorgenti JS (entry: `src/js/index.js`)
-- `templates/`: template PHP (contenitori/slot)
-- `includes/`: loader config, sanitizzazione CSS vars, utilità server-side
-- `woocommerce-side-cart.config.php`: config di default inclusa nel plugin (override-friendly)
+- `assets/css/woocommerce_side_cart.base.css`: base drawer styles (tokens + layout + components)
+- `assets/js/woocommerce_side_cart(.min).js`: compiled bundle
+- `src/js/`: JS sources (entry: `src/js/index.js`)
+- `templates/`: PHP templates (containers/slots)
+- `includes/`: config loader, CSS vars sanitization, server-side utilities
+- `woocommerce-side-cart.config.php`: default config shipped with the plugin (override-friendly)
 
-## Build (sviluppo)
+## Build (development)
 
-Richiede Node.js.
+Requires Node.js.
 
 ```bash
 npm install
 npm run ci
 ```
 
-Script utili:
+Useful scripts:
 
 - `npm run lint:js`
 - `npm run build`
 
-## Configurazione (drop-in)
+## Configuration (drop-in)
 
-Puoi configurare il plugin tramite file:
+You can configure the plugin via files:
 
-- `woocommerce-side-cart.config.json` (consigliato, data-only)
-- `woocommerce-side-cart.config.php` (deve **ritornare un array PHP**)
+- `woocommerce-side-cart.config.json` (recommended, data-only)
+- `woocommerce-side-cart.config.php` (must **return a PHP array**)
 
-### Ordine di risoluzione dei file config
+### Config file resolution order
 
-Viene usato il **primo file valido** trovato, in quest’ordine:
+The **first valid file** found is used, in this order:
 
 1. `wp-content/woocommerce-side-cart.config.json`
 2. `wp-content/woocommerce-side-cart.config.php`
-3. `wp-content/themes/<tema-attivo>/woocommerce-side-cart.config.json` (child theme)
-4. `wp-content/themes/<tema-attivo>/woocommerce-side-cart.config.php` (child theme)
+3. `wp-content/themes/<active-theme>/woocommerce-side-cart.config.json` (child theme)
+4. `wp-content/themes/<active-theme>/woocommerce-side-cart.config.php` (child theme)
 5. `wp-content/plugins/woocommerce-side-cart/woocommerce-side-cart.config.json`
 6. `wp-content/plugins/woocommerce-side-cart/woocommerce-side-cart.config.php`
 
-Filtri utili:
+Useful filters:
 
-- `wc_side_cart_config_path`: aggiunge un path custom con priorità massima
-- `wc_side_cart_config_paths`: sostituisce/riordina l’intera lista di path
-- `wc_side_cart_config`: filtra la config dopo merge con i default
+- `wc_side_cart_config_path`: adds a custom path with maximum priority
+- `wc_side_cart_config_paths`: replaces/reorders the whole path list
+- `wc_side_cart_config`: filters the config after merging with defaults
 
-## Localizzazione (i18n)
+## Localization (i18n)
 
-Questo plugin evita stringhe “custom” e si appoggia a:
+This plugin avoids custom translation strings and relies on:
 
-- stringhe core di WooCommerce (`textdomain: woocommerce`)
-- messaggi restituiti dalla Store API (già tradotti da WooCommerce)
+- WooCommerce core strings (`textdomain: woocommerce`)
+- messages returned by the Store API (already translated by WooCommerce)
 
-In pratica: non è necessario avere un file di traduzione del plugin per avere la UI tradotta.
+In practice: you do not need a plugin translation file to get a translated UI.
 
-### Esempio config (PHP)
+### Example config (PHP)
 
 ```php
 <?php
@@ -98,37 +98,37 @@ return array(
 );
 ```
 
-## Flag UI (comportamento attuale)
+## UI flags (current behavior)
 
-Questi flag sono i più importanti per la UX del cart.
+These flags are the most important for the cart UX.
 
 - `ui.showItemQuantity`
-  - Se `true`: mostra la riga sotto al titolo prodotto con **“quantità × prezzo unitario”**
-  - Se `false`: nasconde questa riga
+  - If `true`: shows the row under the product title with **“quantity × unit price”**
+  - If `false`: hides this row
 - `ui.enableQuantityEditing`
-  - Se `true`: mostra lo **stepper** per modificare la quantità
-  - Se `false`: nessuno stepper; se `ui.showItemQuantity` è `true` e non è disponibile la riga “qty × unit”, viene mostrato un fallback minimale con la quantità
+  - If `true`: shows the **stepper** to change the quantity
+  - If `false`: no stepper; if `ui.showItemQuantity` is `true` and the “qty × unit” row is not available, a minimal fallback with the quantity is displayed
 - `ui.showItemLinks`
-  - Se `true`: il nome prodotto è cliccabile
-  - Se `false`: il nome prodotto è testo&#x20;
+  - If `true`: the product name is clickable
+  - If `false`: the product name is plain text&#x20;
 
-Altri flag:
+Other flags:
 
-- `ui.showItemPrice`: mostra il prezzo riga (line total) nella colonna azioni
-- `ui.showItemRemove`: mostra l’azione “Rimuovi”
-- `ui.showItemThumbnail`: mostra la thumbnail prodotto
-- `ui.showCoupons`: mostra UI coupon (se endpoint Store API disponibili)
-- `ui.showSubtotal`, `ui.showShipping`, `ui.showTaxes`, `ui.showTotal`: controllano le righe nei totali
-- `ui.showFloatingCartIcon`: mostra l’icona floating integrata
-- `ui.openTriggerElementId`: id di un elemento esterno che apre/chiude il drawer
-- `ui.badgeElementId`: id di un elemento esterno per il badge conteggio
-- `ui.autoOpenOnAddToCart`: auto-open dopo add-to-cart
+- `ui.showItemPrice`: shows the line price (line total) in the actions column
+- `ui.showItemRemove`: shows the “Remove” action
+- `ui.showItemThumbnail`: shows the product thumbnail
+- `ui.showCoupons`: shows the coupon UI (if Store API endpoints are available)
+- `ui.showSubtotal`, `ui.showShipping`, `ui.showTaxes`, `ui.showTotal`: control rows in totals
+- `ui.showFloatingCartIcon`: shows the built-in floating icon
+- `ui.openTriggerElementId`: id of an external element that opens/closes the drawer
+- `ui.badgeElementId`: id of an external element for the count badge
+- `ui.autoOpenOnAddToCart`: auto-open after add-to-cart
 
 ## Styling (CSS Variables)
 
-Il look è governato principalmente da variabili `--wcsc-*` (puoi passarle via `cssVars` in config).
+The look is primarily driven by `--wcsc-*` variables (you can pass them via `cssVars` in config).
 
-Token tipici:
+Typical tokens:
 
 - `--wcsc-accent`
 - `--wcsc-surface`, `--wcsc-surface-2`
@@ -137,49 +137,49 @@ Token tipici:
 - `--wcsc-shadow`
 - `--wcsc-panel-width`
 
-Nota: vengono accettate solo variabili che matchano `^--wcsc-[a-z0-9_-]+$`.
+Note: only variables matching `^--wcsc-[a-z0-9_-]+$` are accepted.
 
-## Classi extra (cssClasses)
+## Extra classes (cssClasses)
 
-Per personalizzazioni strutturali puoi aggiungere classi extra via config:
+For structural customizations you can add extra classes via config:
 
 - `cssClasses.panel`, `backdrop`, `container`, `header`, `form`, `items`, `item`, `footer`, `totals`, `coupon`, `floatingIcon`
-- `cssClasses.itemOdd` / `itemEven`: classi aggiunte agli item in base alla parità (hook utile per override tema)
+- `cssClasses.itemOdd` / `itemEven`: classes added to items based on parity (useful for theme overrides)
 
 ## Hook HTML (hooksHtml)
 
-Punti disponibili:
+Available slots:
 
-- `aboveItems`: sopra la lista items
-- `afterFirstItem`: dopo il primo item
-- `afterActions`: sotto le CTA nel footer
+- `aboveItems`: above the items list
+- `afterFirstItem`: after the first item
+- `afterActions`: below the footer CTAs
 
-Sicurezza:
+Security:
 
 - `hooksHtmlPolicy`: `post` (default) | `strict` | `none`
-- `hooksHtmlOptions.enabled`: abilita/disabilita output
+- `hooksHtmlOptions.enabled`: enables/disables output
 - `hooksHtmlOptions.maxLength`: clamp 0..50000
 
-Best practice: usa hook HTML per inserire **contenitori leggeri** e aggiorna contenuti dinamici via JS sull’evento `side_cart_refreshed`.
+Best practice: use HTML hooks to inject **lightweight containers** and update dynamic content via JS on the `side_cart_refreshed` event.
 
-## Eventi JS (pubblici)
+## Public JS events
 
-Tutti gli eventi `side_cart_*` vengono emessi come `CustomEvent` su `document.body` (usa quindi `document.body.addEventListener(...)`).
+All `side_cart_*` events are emitted as `CustomEvent` on `document.body` (so use `document.body.addEventListener(...)`).
 
-Eventi principali:
+Main events:
 
-- `side_cart_open`: il drawer è stato aperto
-- `side_cart_close`: il drawer è stato chiuso
-- `side_cart_before_render`: prima del render (`detail: { cart }`)
-- `side_cart_after_render`: dopo il render (`detail: { cart }`)
-- `side_cart_refreshed`: render completo/refresh (`detail: { cart }`)
-- `side_cart_cart_updated`: cart aggiornato dopo render o mutazioni (`detail: { cart }`)
-- `side_cart_cart_fetched`: cart ottenuto da Store API (`detail: { cart }`)
-- `side_cart_error`: errore Store API o runtime (`detail: { error }`)
-- `side_cart_coupon_applied`: coupon applicato (`detail: { code, cart }`)
-- `side_cart_coupon_removed`: coupon rimosso (`detail: { code, cart }`)
+- `side_cart_open`: the drawer has been opened
+- `side_cart_close`: the drawer has been closed
+- `side_cart_before_render`: before render (`detail: { cart }`)
+- `side_cart_after_render`: after render (`detail: { cart }`)
+- `side_cart_refreshed`: full render/refresh (`detail: { cart }`)
+- `side_cart_cart_updated`: cart updated after render or mutations (`detail: { cart }`)
+- `side_cart_cart_fetched`: cart fetched from Store API (`detail: { cart }`)
+- `side_cart_error`: Store API or runtime error (`detail: { error }`)
+- `side_cart_coupon_applied`: coupon applied (`detail: { code, cart }`)
+- `side_cart_coupon_removed`: coupon removed (`detail: { code, cart }`)
 
-Esempio:
+Example:
 
 ```js
 document.body.addEventListener('side_cart_cart_updated', function(e) {
@@ -191,53 +191,53 @@ document.body.addEventListener('side_cart_error', function(e) {
 });
 ```
 
-### Eventi WooCommerce Blocks&#x20;
+### WooCommerce Blocks events&#x20;
 
-Dopo mutazioni via Store API il plugin emette anche eventi per invalidare/aggiornare WooCommerce Blocks su `document`, `document.body` e `window`:
+After Store API mutations, the plugin also emits events to invalidate/update WooCommerce Blocks on `document`, `document.body`, and `window`:
 
 - `wc-blocks_added_to_cart` (`detail: { preserveCartData: false, cartItemKey? }`)
 - `wc-blocks_removed_from_cart` (`detail: { preserveCartData: false, cartItemKey? }`)
 
-## Hook JS (renderer override)
+## JS hooks (renderer override)
 
-Il runtime espone un piccolo registry per sostituire porzioni di UI senza forkare il plugin:
+The runtime exposes a small registry to replace UI portions without forking the plugin:
 
 - `window.wcSideCart.registerRenderer(name, fn)`
 - `window.wcSideCart.registerRenderers(map)`
 - `window.wcSideCart.resetRenderers()`
 
-Renderer disponibili: `empty`, `items`, `totals`.
+Available renderers: `empty`, `items`, `totals`.
 
-Firma:
+Signature:
 
 `fn(dom, cart, api)`
 
-- `dom`: nodi principali del drawer (items/totals/footer ecc.)
-- `cart`: payload Store API
-- `api`: helper (emit, refreshCart, updateItemQuantity, removeItem, applyCoupon, removeCoupon, createPriceSpan, appendHook, selectors)
+- `dom`: main drawer nodes (items/totals/footer, etc.)
+- `cart`: Store API payload
+- `api`: helpers (emit, refreshCart, updateItemQuantity, removeItem, applyCoupon, removeCoupon, createPriceSpan, appendHook, selectors)
 
-Esempio:
+Example:
 
 ```js
 document.addEventListener('DOMContentLoaded', function() {
 	if (!window.wcSideCart || !window.wcSideCart.registerRenderer) return;
 	window.wcSideCart.registerRenderer('totals', function(dom, cart, api) {
-		dom.totals.textContent = 'Totali personalizzati';
+		dom.totals.textContent = 'Custom totals';
 	});
 });
 ```
 
-## Parità / comportamento trigger (parity)
+## Parity / trigger behavior (parity)
 
 - `parity.onCartClickBehaviour`: `open_drawer` | `navigate_to_cart` | `navigate_to_checkout` | `navigate_to_url`
 - `parity.cartCheckoutGating`: `removed` | `hidden`
-- `parity.blocksSyncDebug`: log minimale per diagnostica sync con Blocks
+- `parity.blocksSyncDebug`: minimal logging for Blocks sync diagnostics
 
-## Modalità plugin
+## Plugin modes
 
-- `mode: "ui"` (default): render UI completa
-- `mode: "headless"`: abilita solo logica/integrazioni (senza UI)
+- `mode: "ui"` (default): renders the full UI
+- `mode: "headless"`: enables logic/integrations only (no UI)
 
 ## License
 
-Vedi file di licenza del progetto (se presente) o l’header del plugin.
+See the project license file (if present) or the plugin header.

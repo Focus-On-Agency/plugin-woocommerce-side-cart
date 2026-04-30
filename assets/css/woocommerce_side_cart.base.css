@@ -45,7 +45,7 @@ body.wc-side-cart-is-open .wc-side-cart-backdrop {
 	pointer-events: auto;
 }
 
-.side-cart {
+#wc-side-cart-panel {
 	--wcsc-font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 	--wcsc-surface: #fbfbfd;
 	--wcsc-surface-2: #f5f5f7;
@@ -108,13 +108,13 @@ body.wc-side-cart-is-open .wc-side-cart-backdrop {
 	border-left: 1px solid var(--wcsc-border);
 }
 
-body.wc-side-cart-is-open .side-cart {
+body.wc-side-cart-is-open #wc-side-cart-panel {
 	transform: translate3d(0, 0, 0);
 }
 
 @media (prefers-reduced-motion: reduce) {
 	.wc-side-cart-backdrop,
-	.side-cart {
+	#wc-side-cart-panel {
 		transition: none;
 	}
 	.wcsc-toasts {
@@ -123,7 +123,7 @@ body.wc-side-cart-is-open .side-cart {
 }
 
 @media (max-width: 480px) {
-	.side-cart {
+	#wc-side-cart-panel {
 		left: 0;
 		right: 0;
 		bottom: 0;
@@ -132,6 +132,10 @@ body.wc-side-cart-is-open .side-cart {
 		border-top: 1px solid var(--wcsc-border);
 		border-radius: var(--wcsc-radius) var(--wcsc-radius) 0 0;
 		transform: translate3d(0, 100%, 0);
+	}
+
+	body.wc-side-cart-is-open #wc-side-cart-panel {
+		transform: translate3d(0, 0, 0);
 	}
 }
 

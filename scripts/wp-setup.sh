@@ -19,12 +19,12 @@ for i in {1..60}; do
 done
 
 if ! curl -fsS "${wpBaseUrl}/wp-login.php" >/dev/null 2>&1; then
-	echo "WordPress non risponde su ${wpBaseUrl}" >&2
+	echo "WordPress is not responding at ${wpBaseUrl}" >&2
 	exit 1
 fi
 
 if docker compose run --rm wpcli core is-installed >/dev/null 2>&1; then
-	echo "WordPress già installato."
+	echo "WordPress is already installed."
 else
 	docker compose run --rm wpcli core install \
 		--url="${wpBaseUrl}" \
@@ -49,18 +49,18 @@ if docker compose run --rm wpcli wc tool run install_pages >/dev/null 2>&1; then
 	:
 fi
 
-productName="${WP_PRODUCT_NAME:-Prodotto Test Side Cart}"
+productName="${WP_PRODUCT_NAME:-Side Cart Test Product}"
 productSku="${WP_PRODUCT_SKU:-sidecart-test-sku}"
 productPrice="${WP_PRODUCT_PRICE:-9.99}"
 productCountRaw="${WP_PRODUCT_COUNT:-5}"
 
 productCount="$(echo -n "${productCountRaw}" | tr -d '[:space:]')"
 if ! [[ "${productCount}" =~ ^[0-9]+$ ]]; then
-	echo "WP_PRODUCT_COUNT non valido: ${productCountRaw}" >&2
+	echo "WP_PRODUCT_COUNT is not valid: ${productCountRaw}" >&2
 	exit 1
 fi
 if [[ "${productCount}" -lt 1 ]]; then
-	echo "WP_PRODUCT_COUNT deve essere >= 1" >&2
+	echo "WP_PRODUCT_COUNT must be >= 1" >&2
 	exit 1
 fi
 
@@ -69,11 +69,11 @@ saleFixedPrice="${WP_SALE_FIXED_PRICE:-7.99}"
 
 salePercent="$(echo -n "${salePercentRaw}" | tr -d '[:space:]')"
 if ! [[ "${salePercent}" =~ ^[0-9]+$ ]]; then
-	echo "WP_SALE_PERCENT non valido: ${salePercentRaw}" >&2
+	echo "WP_SALE_PERCENT is not valid: ${salePercentRaw}" >&2
 	exit 1
 fi
 if [[ "${salePercent}" -lt 1 || "${salePercent}" -gt 90 ]]; then
-	echo "WP_SALE_PERCENT deve essere tra 1 e 90" >&2
+	echo "WP_SALE_PERCENT must be between 1 and 90" >&2
 	exit 1
 fi
 
@@ -217,7 +217,7 @@ if [[ "${normalCount}" -gt 0 ]]; then
 fi
 
 if [[ "${#createdProductIds[@]}" -lt "${productCount}" ]]; then
-	echo "Impossibile creare/rilevare ${productCount} prodotti (ottenuti: ${#createdProductIds[@]})." >&2
+	echo "Unable to create/detect ${productCount} products (got: ${#createdProductIds[@]})." >&2
 	exit 1
 fi
 

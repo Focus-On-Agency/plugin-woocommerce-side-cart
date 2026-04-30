@@ -5,13 +5,13 @@ wpBaseUrl="${WP_BASE_URL:-http://localhost:8080}"
 storeApiBase="${wpBaseUrl}/wp-json/wc/store/v1"
 
 if [[ ! -f ".docker/product-id" ]]; then
-	echo "File mancante: .docker/product-id. Esegui prima: bash scripts/wp-setup.sh" >&2
+	echo "Missing file: .docker/product-id. Run first: bash scripts/wp-setup.sh" >&2
 	exit 1
 fi
 
 productId="$(cat .docker/product-id)"
 if [[ -z "${productId}" ]]; then
-	echo "Product ID vuoto in .docker/product-id" >&2
+	echo "Empty product ID in .docker/product-id" >&2
 	exit 1
 fi
 
@@ -66,32 +66,32 @@ extractJson() {
 	python3 -c "import json,sys; data=json.load(open(sys.argv[1])); print(${pythonExpr})" "${bodyFile}"
 }
 
-echo "GET cart (ottenere Cart-Token)"
+echo "GET cart (fetch Cart-Token)"
 read -r httpCode cartToken storeApiNonce bodyFile < <(requestJson "GET" "${storeApiBase}/cart")
 if [[ "${httpCode}" != "200" ]]; then
-	echo "GET cart fallita (HTTP ${httpCode})" >&2
+	echo "GET cart failed (HTTP ${httpCode})" >&2
 	cat "${bodyFile}" >&2
 	exit 1
 fi
 if [[ -z "${cartToken}" ]]; then
-	echo "Cart-Token non trovato in risposta (GET cart)" >&2
+	echo "Cart-Token not found in response (GET cart)" >&2
 	exit 1
 fi
 if [[ -z "${storeApiNonce}" ]]; then
-	echo "Store API Nonce non trovato in risposta (GET cart). Proseguo comunque." >&2
+	echo "Store API Nonce not found in response (GET cart). Continuing anyway." >&2
 fi
 
 echo "POST add-item"
 read -r httpCode cartToken storeApiNonce bodyFile < <(requestJson "POST" "${storeApiBase}/cart/add-item" "{\"id\":${productId},\"quantity\":2}" "${cartToken}" "${storeApiNonce}")
 if [[ "${httpCode}" != "200" && "${httpCode}" != "201" ]]; then
-	echo "add-item fallita (HTTP ${httpCode})" >&2
+	echo "add-item failed (HTTP ${httpCode})" >&2
 	cat "${bodyFile}" >&2
 	exit 1
 fi
 
 cartItemKey="$(extractJson "${bodyFile}" "data['items'][0]['key']")"
 if [[ -z "${cartItemKey}" ]]; then
-	echo "Impossibile estrarre item key dal carrello dopo add-item" >&2
+	echo "Unable to extract item key from cart after add-item" >&2
 	cat "${bodyFile}" >&2
 	exit 1
 fi
@@ -99,14 +99,14 @@ fi
 echo "POST update-item"
 read -r httpCode cartToken storeApiNonce bodyFile < <(requestJson "POST" "${storeApiBase}/cart/update-item" "{\"key\":\"${cartItemKey}\",\"quantity\":3}" "${cartToken}" "${storeApiNonce}")
 if [[ "${httpCode}" != "200" && "${httpCode}" != "201" ]]; then
-	echo "update-item fallita (HTTP ${httpCode})" >&2
+	echo "update-item failed (HTTP ${httpCode})" >&2
 	cat "${bodyFile}" >&2
 	exit 1
 fi
 
 updatedQty="$(extractJson "${bodyFile}" "next((i.get('quantity') for i in data.get('items',[]) if i.get('key')=='${cartItemKey}'), '')")"
 if [[ "${updatedQty}" != "3" ]]; then
-	echo "Quantità non aggiornata (atteso 3, ottenuto ${updatedQty})" >&2
+	echo "Quantity not updated (expected 3, got ${updatedQty})" >&2
 	cat "${bodyFile}" >&2
 	exit 1
 fi
@@ -123,17 +123,17 @@ if [[ -n "${couponCodeReq}" ]]; then
 	echo "POST apply-coupon (${couponCodeReq})"
 	read -r httpCode cartToken storeApiNonce bodyFile < <(requestJson "POST" "${storeApiBase}/cart/apply-coupon" "{\"code\":\"${couponCodeReq}\"}" "${cartToken}" "${storeApiNonce}")
 	if [[ "${httpCode}" == "404" || "${httpCode}" == "403" ]]; then
-		echo "SKIP: coupon endpoint non disponibile o coupons disabilitati (HTTP ${httpCode})"
+		echo "SKIP: coupon endpoint not available or coupons disabled (HTTP ${httpCode})"
 	else
 		if [[ "${httpCode}" != "200" && "${httpCode}" != "201" ]]; then
-			echo "apply-coupon fallita (HTTP ${httpCode})" >&2
+			echo "apply-coupon failed (HTTP ${httpCode})" >&2
 			cat "${bodyFile}" >&2
 			exit 1
 		fi
 
 		hasCoupon="$(extractJson "${bodyFile}" "any((c.get('code','').lower()=='${couponCodeReq}') for c in data.get('coupons', []))")"
 		if [[ "${hasCoupon}" != "True" ]]; then
-			echo "Coupon non presente nel carrello dopo apply-coupon" >&2
+			echo "Coupon not present in cart after apply-coupon" >&2
 			cat "${bodyFile}" >&2
 			exit 1
 		fi
@@ -141,43 +141,43 @@ if [[ -n "${couponCodeReq}" ]]; then
 		echo "POST remove-coupon (${couponCodeReq})"
 		read -r httpCode cartToken storeApiNonce bodyFile < <(requestJson "POST" "${storeApiBase}/cart/remove-coupon" "{\"code\":\"${couponCodeReq}\"}" "${cartToken}" "${storeApiNonce}")
 		if [[ "${httpCode}" != "200" && "${httpCode}" != "201" ]]; then
-			echo "remove-coupon fallita (HTTP ${httpCode})" >&2
+			echo "remove-coupon failed (HTTP ${httpCode})" >&2
 			cat "${bodyFile}" >&2
 			exit 1
 		fi
 
 		hasCoupon="$(extractJson "${bodyFile}" "any((c.get('code','').lower()=='${couponCodeReq}') for c in data.get('coupons', []))")"
 		if [[ "${hasCoupon}" != "False" ]]; then
-			echo "Coupon ancora presente nel carrello dopo remove-coupon" >&2
+			echo "Coupon still present in cart after remove-coupon" >&2
 			cat "${bodyFile}" >&2
 			exit 1
 		fi
 	fi
 else
-	echo "SKIP: coupon test (imposta COUPON_CODE oppure crea .docker/coupon-code)"
+	echo "SKIP: coupon test (set COUPON_CODE or create .docker/coupon-code)"
 fi
 
 echo "POST remove-item"
 read -r httpCode cartToken storeApiNonce bodyFile < <(requestJson "POST" "${storeApiBase}/cart/remove-item" "{\"key\":\"${cartItemKey}\"}" "${cartToken}" "${storeApiNonce}")
 if [[ "${httpCode}" != "200" && "${httpCode}" != "201" ]]; then
-	echo "remove-item fallita (HTTP ${httpCode})" >&2
+	echo "remove-item failed (HTTP ${httpCode})" >&2
 	cat "${bodyFile}" >&2
 	exit 1
 fi
 
-echo "GET cart (verifica vuoto)"
+echo "GET cart (verify empty)"
 read -r httpCode cartToken storeApiNonce bodyFile < <(requestJson "GET" "${storeApiBase}/cart" "" "${cartToken}" "${storeApiNonce}")
 if [[ "${httpCode}" != "200" ]]; then
-	echo "GET cart fallita (HTTP ${httpCode})" >&2
+	echo "GET cart failed (HTTP ${httpCode})" >&2
 	cat "${bodyFile}" >&2
 	exit 1
 fi
 
 itemsCount="$(extractJson "${bodyFile}" "len(data.get('items', []))")"
 if [[ "${itemsCount}" != "0" ]]; then
-	echo "Carrello non vuoto dopo remove-item (items: ${itemsCount})" >&2
+	echo "Cart not empty after remove-item (items: ${itemsCount})" >&2
 	cat "${bodyFile}" >&2
 	exit 1
 fi
 
-echo "OK: smoke test Store API cart completato con Cart-Token."
+echo "OK: Store API cart smoke test completed with Cart-Token."
