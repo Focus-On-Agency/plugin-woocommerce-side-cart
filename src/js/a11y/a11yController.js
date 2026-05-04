@@ -27,6 +27,11 @@ export function createA11yController(options) {
 	var lastOpenTrigger = null;
 	var isolatedBackgroundNodes = [];
 	var focusTrapEnabled = false;
+	var scrollInterceptorsActive = false;
+	var scrollInterceptorsOptions = { capture: true, passive: false };
+	var scrollInterceptorHandler = null;
+	var lenisInstance = null;
+	var lenisWasStopped = false;
 
 	function elementInDocument(el) {
 		return !!(el && document.documentElement && document.documentElement.contains(el));
@@ -83,6 +88,44 @@ export function createA11yController(options) {
 			document.body.style.paddingRight = scrollbarWidth + 'px';
 		}
 		document.body.classList.add('wc-side-cart-scroll-lock');
+
+		try {
+			var candidate = null;
+			if (typeof window !== 'undefined') {
+				candidate = window.lenis || null;
+			}
+			if (candidate && typeof candidate.stop === 'function' && typeof candidate.start === 'function') {
+				lenisInstance = candidate;
+				lenisWasStopped = true;
+				lenisInstance.stop();
+			}
+		} catch (e) {}
+
+		if (scrollInterceptorsActive) {
+			return;
+		}
+		scrollInterceptorsActive = true;
+
+		scrollInterceptorHandler = function(e) {
+			try {
+				var panel = getPanel();
+				if (panel && e && e.target && panel.contains(e.target)) {
+					if (e.stopPropagation) {
+						e.stopPropagation();
+					}
+					return;
+				}
+				if (e && e.preventDefault) {
+					e.preventDefault();
+				}
+				if (e && e.stopPropagation) {
+					e.stopPropagation();
+				}
+			} catch (err) {}
+		};
+
+		document.addEventListener('wheel', scrollInterceptorHandler, scrollInterceptorsOptions);
+		document.addEventListener('touchmove', scrollInterceptorHandler, scrollInterceptorsOptions);
 	}
 
 	function unlockScroll() {
@@ -91,6 +134,21 @@ export function createA11yController(options) {
 		}
 		document.body.classList.remove('wc-side-cart-scroll-lock');
 		document.body.style.paddingRight = previousBodyPaddingRight;
+
+		if (scrollInterceptorsActive && scrollInterceptorHandler) {
+			document.removeEventListener('wheel', scrollInterceptorHandler, scrollInterceptorsOptions);
+			document.removeEventListener('touchmove', scrollInterceptorHandler, scrollInterceptorsOptions);
+		}
+		scrollInterceptorsActive = false;
+		scrollInterceptorHandler = null;
+
+		if (lenisInstance && lenisWasStopped) {
+			try {
+				lenisInstance.start();
+			} catch (e) {}
+		}
+		lenisInstance = null;
+		lenisWasStopped = false;
 	}
 
 	function setPanelAria(isOpen) {

@@ -140,6 +140,41 @@ export function setupUiListeners(options) {
 	}
 
 	function performQuantityUpdate(inputEl, cartItemKey, quantity) {
+		function findItemsScroller() {
+			var panel = qs(getSelector('panel'));
+			var itemsSel = getSelector('items');
+			if (!itemsSel) {
+				return null;
+			}
+			return qs(itemsSel, panel || document);
+		}
+
+		function getItemOffsetInScroller(scroller, itemEl) {
+			if (!scroller || !itemEl || !scroller.getBoundingClientRect || !itemEl.getBoundingClientRect) {
+				return null;
+			}
+			var scrollerRect = scroller.getBoundingClientRect();
+			var itemRect = itemEl.getBoundingClientRect();
+			return (itemRect.top - scrollerRect.top) + scroller.scrollTop;
+		}
+
+		function buildCartItemKeySelector(key) {
+			var safe = String(key || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+			return '[data-cart_item_key="' + safe + '"]';
+		}
+
+		var scrollState = null;
+		var scroller = findItemsScroller();
+		var currentItemNode = inputEl ? inputEl.closest(getSelector('item')) : null;
+		if (scroller) {
+			scrollState = {
+				scroller: scroller,
+				scrollTop: scroller.scrollTop,
+				itemOffset: getItemOffsetInScroller(scroller, currentItemNode),
+				key: cartItemKey
+			};
+		}
+
 		var item = inputEl ? inputEl.closest(getSelector('item')) : null;
 		setBusy(item, true);
 		if (inputEl) {
@@ -153,6 +188,35 @@ export function setupUiListeners(options) {
 		}
 		promise.then(function(cart) {
 			renderCart(cart);
+			if (!scrollState || !scrollState.scroller) {
+				return;
+			}
+			var scroller = scrollState.scroller;
+			var prevScrollTop = scrollState.scrollTop;
+			var prevOffset = scrollState.itemOffset;
+			var key = scrollState.key;
+			window.requestAnimationFrame(function() {
+				try {
+					if (prevOffset === null) {
+						scroller.scrollTop = prevScrollTop;
+						return;
+					}
+					var sel = buildCartItemKeySelector(key);
+					var newItem = scroller.querySelector ? scroller.querySelector(sel) : null;
+					if (!newItem) {
+						scroller.scrollTop = prevScrollTop;
+						return;
+					}
+					var newOffset = getItemOffsetInScroller(scroller, newItem);
+					if (newOffset === null) {
+						scroller.scrollTop = prevScrollTop;
+						return;
+					}
+					scroller.scrollTop = prevScrollTop + (newOffset - prevOffset);
+				} catch (e) {
+					scroller.scrollTop = prevScrollTop;
+				}
+			});
 		}).catch(function() {
 			return recoverFromStoreApiFailure();
 		}).finally(function() {
