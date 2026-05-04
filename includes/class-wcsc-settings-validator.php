@@ -78,6 +78,10 @@ class WCSC_SettingsValidator {
 		$compositeDefaults = array(
 			'groupMode' => 'flat',
 			'showChildren' => true,
+			'summary' => array(
+				'labelSource' => 'component_title',
+				'separator' => ' · ',
+			),
 		);
 		$composite = $compositeDefaults;
 		if ( isset( $config['composite'] ) && is_array( $config['composite'] ) ) {
@@ -91,6 +95,31 @@ class WCSC_SettingsValidator {
 				$composite['showChildren'] = (bool) $config['composite']['showChildren'];
 			}
 		}
+		$summaryFormat = $compositeDefaults['summary'];
+		if ( function_exists( 'apply_filters' ) ) {
+			$summaryFormat = apply_filters(
+				'wc_side_cart_composite_summary_format',
+				$summaryFormat,
+				$composite,
+				$config
+			);
+		}
+		if ( ! is_array( $summaryFormat ) ) {
+			$summaryFormat = $compositeDefaults['summary'];
+		}
+		$labelSource = isset( $summaryFormat['labelSource'] ) ? strtolower( trim( (string) $summaryFormat['labelSource'] ) ) : (string) $compositeDefaults['summary']['labelSource'];
+		if ( ! in_array( $labelSource, array( 'component_title', 'name' ), true ) ) {
+			$labelSource = (string) $compositeDefaults['summary']['labelSource'];
+		}
+		$separator = isset( $summaryFormat['separator'] ) ? (string) $summaryFormat['separator'] : (string) $compositeDefaults['summary']['separator'];
+		$separator = str_replace( "\0", '', $separator );
+		if ( trim( $separator ) === '' ) {
+			$separator = (string) $compositeDefaults['summary']['separator'];
+		}
+		$composite['summary'] = array(
+			'labelSource' => $labelSource,
+			'separator' => $separator,
+		);
 
 		$dom = array( 'selectors' => array() );
 		if ( isset( $config['dom'] ) && is_array( $config['dom'] ) && isset( $config['dom']['selectors'] ) && is_array( $config['dom']['selectors'] ) ) {

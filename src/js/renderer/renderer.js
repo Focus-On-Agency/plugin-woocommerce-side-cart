@@ -112,6 +112,15 @@ export function createRenderer(options) {
 		compositeGroupMode = 'flat';
 	}
 	var compositeShowChildren = (typeof compositeSettings.showChildren === 'boolean') ? compositeSettings.showChildren : true;
+	var compositeSummarySettings = (compositeSettings && typeof compositeSettings.summary === 'object' && compositeSettings.summary) ? compositeSettings.summary : {};
+	var compositeSummaryLabelSource = (typeof compositeSummarySettings.labelSource === 'string') ? compositeSummarySettings.labelSource.trim().toLowerCase() : 'component_title';
+	if (['component_title', 'name'].indexOf(compositeSummaryLabelSource) === -1) {
+		compositeSummaryLabelSource = 'component_title';
+	}
+	var compositeSummarySeparator = (typeof compositeSummarySettings.separator === 'string') ? compositeSummarySettings.separator : ' · ';
+	if (!compositeSummarySeparator || !compositeSummarySeparator.trim()) {
+		compositeSummarySeparator = ' · ';
+	}
 
 	var toastHost = null;
 	var toastTimer = null;
@@ -878,7 +887,7 @@ export function createRenderer(options) {
 			if (!entry) {
 				return;
 			}
-			if (groupedMode && !compositeShowChildren && entry.kind === 'child') {
+			if (!compositeShowChildren && entry.kind === 'child') {
 				return;
 			}
 			displayed.push(item);
@@ -958,7 +967,7 @@ export function createRenderer(options) {
 			}
 			main.appendChild(title);
 
-			if (isParent && groupedMode && compositeGroupMode === 'parent' && !compositeShowChildren) {
+			if (isParent && !compositeShowChildren) {
 				var childNames = [];
 				var childKeys = entry.childrenKeys && entry.childrenKeys.length ? entry.childrenKeys : [];
 				childKeys.forEach(function(childKey) {
@@ -970,7 +979,12 @@ export function createRenderer(options) {
 					var childCompositedMeta = (childCompositeMeta && childCompositeMeta.composited_item_data && typeof childCompositeMeta.composited_item_data === 'object')
 						? childCompositeMeta.composited_item_data
 						: null;
-					var childLabel = childCompositedMeta && childCompositedMeta.component_title ? String(childCompositedMeta.component_title) : (childItem.name || '');
+					var childLabel = '';
+					if (compositeSummaryLabelSource === 'name') {
+						childLabel = childItem.name || '';
+					} else {
+						childLabel = childCompositedMeta && childCompositedMeta.component_title ? String(childCompositedMeta.component_title) : (childItem.name || '');
+					}
 					if (!childLabel) {
 						return;
 					}
@@ -979,7 +993,7 @@ export function createRenderer(options) {
 				if (childNames.length) {
 					var childrenSummary = document.createElement('div');
 					childrenSummary.className = 'wcsc-parent-children-summary';
-					childrenSummary.textContent = childNames.join(' · ');
+					childrenSummary.textContent = childNames.join(compositeSummarySeparator);
 					main.appendChild(childrenSummary);
 				}
 			}

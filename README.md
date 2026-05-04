@@ -176,11 +176,26 @@ The `composite` root key controls parent/child rendering for both Composite Prod
 Behavior matrix:
 
 - `flat + showChildren=true`: current behavior
-- `flat + showChildren=false`: child rows hidden (actions on hidden child rows disabled)
+- `flat + showChildren=false`: child rows hidden (actions on hidden child rows disabled, parent summary rendered)
 - `noindent + showChildren=true`: parent/child visible, no child indent
-- `noindent + showChildren=false`: only parent/standalone visible
+- `noindent + showChildren=false`: only parent/standalone visible (parent summary rendered)
 - `parent + showChildren=true`: parent/child grouped with hierarchy
 - `parent + showChildren=false`: only parent visible with child labels aggregated in parent row
+
+Summary formatter filter:
+
+```php
+add_filter( 'wc_side_cart_composite_summary_format', function( $format, $compositeSettings, $config ) {
+	$format['labelSource'] = 'name';
+	$format['separator'] = ' • ';
+	return $format;
+}, 10, 3 );
+```
+
+Supported values:
+
+- `labelSource`: `component_title` (default) | `name`
+- `separator`: string (default ` · `)
 
 ## Styling (CSS Variables)
 
