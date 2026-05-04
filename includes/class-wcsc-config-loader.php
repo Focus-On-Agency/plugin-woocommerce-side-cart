@@ -105,6 +105,8 @@ class WCSC_ConfigLoader {
 				'showTotal' => false,
 				'showCoupons' => false,
 				'showFloatingCartIcon' => true,
+				'lockPageScroll' => true,
+				'hideCountWhenZero' => false,
 				'openTriggerElementId' => '',
 				'badgeElementId' => '',
 				'autoOpenOnAddToCart' => false,
@@ -215,6 +217,11 @@ class WCSC_ConfigLoader {
 				$config['ui']['showViewCartButton'] = (bool) $configFromFile['ui']['showViewCartButton'];
 			}
 			foreach ( array( 'showCheckoutButton', 'showItemRemove', 'showItemQuantity', 'showItemLinks', 'showItemPrice', 'showItemThumbnail', 'showSubtotal', 'showShipping', 'showTaxes', 'showTotal', 'showCoupons' ) as $flag ) {
+				if ( isset( $configFromFile['ui'][ $flag ] ) ) {
+					$config['ui'][ $flag ] = (bool) $configFromFile['ui'][ $flag ];
+				}
+			}
+			foreach ( array( 'lockPageScroll', 'hideCountWhenZero' ) as $flag ) {
 				if ( isset( $configFromFile['ui'][ $flag ] ) ) {
 					$config['ui'][ $flag ] = (bool) $configFromFile['ui'][ $flag ];
 				}
@@ -371,7 +378,7 @@ class WCSC_ConfigLoader {
 		if ( ! isset( $config['ui'] ) || ! is_array( $config['ui'] ) ) {
 			$config['ui'] = $defaults['ui'];
 		}
-		foreach ( array( 'showViewCartButton', 'showCheckoutButton', 'showItemRemove', 'showItemQuantity', 'enableQuantityEditing', 'showItemLinks', 'showItemPrice', 'showItemThumbnail', 'showSubtotal', 'showShipping', 'showTaxes', 'showTotal', 'showCoupons', 'showFloatingCartIcon', 'autoOpenOnAddToCart' ) as $flag ) {
+		foreach ( array( 'showViewCartButton', 'showCheckoutButton', 'showItemRemove', 'showItemQuantity', 'enableQuantityEditing', 'showItemLinks', 'showItemPrice', 'showItemThumbnail', 'showSubtotal', 'showShipping', 'showTaxes', 'showTotal', 'showCoupons', 'showFloatingCartIcon', 'lockPageScroll', 'hideCountWhenZero', 'autoOpenOnAddToCart' ) as $flag ) {
 			$config['ui'][ $flag ] = isset( $config['ui'][ $flag ] ) ? (bool) $config['ui'][ $flag ] : (bool) $defaults['ui'][ $flag ];
 		}
 		foreach ( array( 'openTriggerElementId', 'badgeElementId' ) as $field ) {

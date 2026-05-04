@@ -10,6 +10,7 @@ import { getCartItemCount } from '../utils/money.js';
 export function createCartState(options) {
 	var wcSideCart = options && options.wcSideCart ? options.wcSideCart : null;
 	var badgeElementId = options && options.badgeElementId ? options.badgeElementId : '';
+	var hideCountWhenZero = (options && typeof options.hideCountWhenZero === 'boolean') ? options.hideCountWhenZero : false;
 
 	var storeApiNonceStorageKey = 'wcSideCartStoreApiNonce';
 	var cartTokenStorageKey = 'wcSideCartCartToken';
@@ -83,13 +84,36 @@ export function createCartState(options) {
 
 	function updateCountFromCart(cart) {
 		var count = String(getCartItemCount(cart));
+		var isZero = count === '0';
+
+		function setHidden(el, value) {
+			if (!el || !el.setAttribute || !el.removeAttribute) {
+				return;
+			}
+			if (value) {
+				el.setAttribute('hidden', 'hidden');
+				return;
+			}
+			el.removeAttribute('hidden');
+		}
+
 		qsa('.js-side-cart-number, #wc-side-cart-panel .side-cart__number, a.js-side-cart-open .side-cart__number').forEach(function(el) {
 			el.textContent = count;
+			if (hideCountWhenZero) {
+				setHidden(el, isZero);
+				return;
+			}
+			setHidden(el, false);
 		});
 		if (badgeElementId) {
 			var badge = document.getElementById(badgeElementId);
 			if (badge) {
 				badge.textContent = count;
+				if (hideCountWhenZero) {
+					setHidden(badge, isZero);
+					return;
+				}
+				setHidden(badge, false);
 			}
 		}
 	}

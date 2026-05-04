@@ -16,10 +16,26 @@ global $wc_side_cart;
 
 do_action( 'wc_side_cart_before' );
 
+$config = ( isset( $side_cart_config ) && is_array( $side_cart_config ) ) ? $side_cart_config : array();
+
+$hide_count_when_zero = false;
+if ( isset( $config['ui'] ) && is_array( $config['ui'] ) && isset( $config['ui']['hideCountWhenZero'] ) ) {
+	$hide_count_when_zero = (bool) $config['ui']['hideCountWhenZero'];
+}
+
+$raw_svg = apply_filters( 'wc_side_cart_icon_svg', '', 'panel_header', $config );
+$svg = WCSC_IconSvgSanitizer::sanitizeSvg( $raw_svg );
+$has_svg = ( $svg !== '' );
+$icon_class_attr = 'side-cart__icon';
+if ( $has_svg ) {
+	$icon_class_attr .= ' side-cart__icon--svg';
+}
+
 $side_cart_visibility = isset( $side_cart_visibility ) ? (string) $side_cart_visibility : 'normal';
 $is_hidden = ( $side_cart_visibility === 'hidden' );
 
 $is_empty = WC()->cart->is_empty();
+$count = absint( apply_filters( 'wc_side_cart_contents_count', WC()->cart->cart_contents_count ) );
 
 ?>
 
@@ -37,14 +53,15 @@ $is_empty = WC()->cart->is_empty();
 			
     	<div class="side-cart__iconic">
     		
-    		<a href="<?php echo esc_url( wc_get_cart_url() ); ?>" class="side-cart__icon">
+    		<a href="<?php echo esc_url( wc_get_cart_url() ); ?>" class="<?php echo esc_attr( $icon_class_attr ); ?>">
 				<span class="screen-reader-text"><?php echo esc_html__( 'View cart', 'woocommerce' ); ?></span>
+				<?php if ( $has_svg ) : ?>
+					<span class="side-cart__icon_svg" aria-hidden="true"><?php echo $svg; ?></span>
+				<?php endif; ?>
         		
-        		<span class="side-cart__number">
-        		
-        		    <?php echo esc_html( absint( apply_filters( 'wc_side_cart_contents_count', WC()->cart->cart_contents_count ) ) ); ?>
-        		    
-        		</span>
+        		<span class="side-cart__number" <?php echo ( $hide_count_when_zero && $count === 0 ) ? 'hidden="hidden"' : ''; ?>>
+					<?php echo esc_html( $count ); ?>
+				</span>
         		
     		</a>
     	

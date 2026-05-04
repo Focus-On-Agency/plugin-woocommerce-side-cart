@@ -220,6 +220,24 @@ body.wc-side-cart-is-open #wc-side-cart-panel {
 	opacity: 0.55;
 }
 
+.side-cart__icon--svg::before {
+	content: none;
+}
+
+.side-cart__icon_svg {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+}
+
+.side-cart__icon_svg svg {
+	display: block;
+	width: 18px;
+	height: 18px;
+}
+
 .side-cart__number {
 	position: absolute;
 	top: -6px;

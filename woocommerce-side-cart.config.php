@@ -20,6 +20,8 @@ return array(
 		'showTotal' => true,
 		'showCoupons' => true,
 		'showFloatingCartIcon' => true,
+		'lockPageScroll' => true,
+		'hideCountWhenZero' => false,
 		'openTriggerElementId' => '',
 		'badgeElementId' => '',
 		'autoOpenOnAddToCart' => true,

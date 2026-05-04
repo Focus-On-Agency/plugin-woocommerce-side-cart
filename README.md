@@ -98,6 +98,38 @@ return array(
 );
 ```
 
+## Config reference (all supported keys)
+
+Root keys (top-level):
+
+- `mode`: `"ui"` (default) | `"headless"`
+- `storeApi.cacheBusting`
+  - `enabled`: `bool` (default `false`)
+  - `param`: `string` (default `"wcsc_cb"`, max 64, `[a-zA-Z0-9_-]`)
+  - `strategy`: `"timestamp"` (default) | `"random"`
+- `dom.selectors`: `object<string,string>` (override internal selectors)
+  - allowed keys: `panel`, `backdrop`, `container`, `header`, `form`, `items`, `footer`, `totals`, `item`, `floatingIcon`, `emptyTemplate`, `toggle`, `remove`, `qtyInput`, `stepperDec`, `stepperInc`
+- `parity`
+  - `cartCheckoutGating`: `"removed"` (default) | `"hidden"`
+  - `onCartClickBehaviour`: `"open_drawer"` (default) | `"navigate_to_checkout"` | `"navigate_to_cart"` | `"navigate_to_url"`
+  - `blocksSyncDebug`: `bool` (default `false`)
+- `ui`
+  - visibility/rows: `showViewCartButton`, `showCheckoutButton`, `showItemRemove`, `showItemQuantity`, `enableQuantityEditing`, `showItemLinks`, `showItemPrice`, `showItemThumbnail`, `showSubtotal`, `showShipping`, `showTaxes`, `showTotal`, `showCoupons` (`bool`)
+  - triggers/badge: `openTriggerElementId` (`string`), `badgeElementId` (`string`)
+  - behavior: `autoOpenOnAddToCart` (`bool`)
+  - floating trigger: `showFloatingCartIcon` (`bool`)
+  - scroll lock: `lockPageScroll` (`bool`, default `true`)
+  - count badge: `hideCountWhenZero` (`bool`, default `false`)
+  - client-only: `disableUiListeners` (`bool`, default `false`)
+- `cssVars`: `object<string,string>` (only keys matching `^--wcsc-[a-z0-9_-]+$`)
+- `cssClasses`: `object<string,string>` (extra classes applied to drawer nodes)
+- `hooksHtml`
+  - `aboveItems`, `afterFirstItem`, `afterActions`: `string`
+- `hooksHtmlOptions`
+  - `enabled`: `bool` (default `true`)
+  - `maxLength`: `int` clamped `0..50000` (default `5000`)
+- `hooksHtmlPolicy`: `"post"` (default) | `"strict"` | `"none"`
+
 ## UI flags (current behavior)
 
 These flags are the most important for the cart UX.
@@ -120,6 +152,8 @@ Other flags:
 - `ui.showCoupons`: shows the coupon UI (if Store API endpoints are available)
 - `ui.showSubtotal`, `ui.showShipping`, `ui.showTaxes`, `ui.showTotal`: control rows in totals
 - `ui.showFloatingCartIcon`: shows the built-in floating icon
+- `ui.lockPageScroll`: if `true` (default) locks the page scroll when the drawer is open; if `false` the page remains scrollable
+- `ui.hideCountWhenZero`: if `true` hides the `.side-cart__number` badge when the count is `0`
 - `ui.openTriggerElementId`: id of an external element that opens/closes the drawer
 - `ui.badgeElementId`: id of an external element for the count badge
 - `ui.autoOpenOnAddToCart`: auto-open after add-to-cart
@@ -138,6 +172,24 @@ Typical tokens:
 - `--wcsc-panel-width`
 
 Note: only variables matching `^--wcsc-[a-z0-9_-]+$` are accepted.
+
+## Icon (SVG) override
+
+The built-in icon uses an icon font via CSS (`.side-cart__icon::before`). You can replace it with an inline SVG via a PHP filter:
+
+```php
+add_filter( 'wc_side_cart_icon_svg', function( $svg, $context, $config ) {
+	if ( $context !== 'floating' && $context !== 'panel_header' ) {
+		return $svg;
+	}
+	return '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M7 4h-2l-1 2v2h2l2.6 9.2c.2.5.7.8 1.2.8h8.6c.5 0 1-.3 1.2-.8l2-7.2h-14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+}, 10, 3 );
+```
+
+Notes:
+
+- The SVG is sanitized server-side (unsafe tags/attrs are removed).
+- When a valid SVG is returned, the template adds `side-cart__icon--svg` and outputs the SVG inside `.side-cart__icon_svg`.
 
 ## Extra classes (cssClasses)
 

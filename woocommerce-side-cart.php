@@ -2,7 +2,7 @@
 /*
 * Plugin Name: WooCommerce Side Cart
 * Description: Lightweight side cart drawer powered by WooCommerce (Store API). Toggle via icon/menu link or a custom trigger element.
-* Version: 3.0.0
+* Version: 3.1.0
 * Author: Focus On
 * Author URI: https://focuson.agency
 *
@@ -16,13 +16,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WCSC_VERSION', '3.0.0' );
+define( 'WCSC_VERSION', '3.1.0' );
 define( 'WCSC_PLUGIN_FILE', __FILE__ );
 define( 'WCSC_PLUGIN_DIR', untrailingslashit( plugin_dir_path( __FILE__ ) ) );
 
 require_once WCSC_PLUGIN_DIR . '/includes/class-wcsc-paths.php';
 require_once WCSC_PLUGIN_DIR . '/includes/class-wcsc-config-loader.php';
 require_once WCSC_PLUGIN_DIR . '/includes/class-wcsc-css-vars-sanitizer.php';
+require_once WCSC_PLUGIN_DIR . '/includes/class-wcsc-icon-svg-sanitizer.php';
 require_once WCSC_PLUGIN_DIR . '/includes/class-wcsc-hooks-html-sanitizer.php';
 require_once WCSC_PLUGIN_DIR . '/includes/class-wcsc-settings-validator.php';
 require_once WCSC_PLUGIN_DIR . '/includes/class-wcsc-payload-builder.php';
@@ -214,6 +215,7 @@ class WC_Side_Cart {
 			'cart/cart-aside.php',
 			array(
 				'side_cart_visibility' => $this->get_side_cart_visibility(),
+				'side_cart_config' => $config,
 			),
 			false,
 			$this->templates_path()

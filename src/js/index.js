@@ -71,6 +71,8 @@ onReady(function() {
 
 	var badgeElementId = (typeof uiSettings.badgeElementId === 'string') ? uiSettings.badgeElementId.trim() : '';
 	var openTriggerElementId = (typeof uiSettings.openTriggerElementId === 'string') ? uiSettings.openTriggerElementId.trim() : '';
+	var lockPageScroll = (typeof uiSettings.lockPageScroll === 'boolean') ? uiSettings.lockPageScroll : true;
+	var hideCountWhenZero = (typeof uiSettings.hideCountWhenZero === 'boolean') ? uiSettings.hideCountWhenZero : false;
 	var autoOpenOnAddToCart = (typeof uiSettings.autoOpenOnAddToCart === 'boolean') ? uiSettings.autoOpenOnAddToCart : false;
 	var disableUiListeners = (typeof uiSettings.disableUiListeners === 'boolean') ? uiSettings.disableUiListeners : false;
 
@@ -81,7 +83,8 @@ onReady(function() {
 
 	var cartState = createCartState({
 		wcSideCart: wcSideCart,
-		badgeElementId: badgeElementId
+		badgeElementId: badgeElementId,
+		hideCountWhenZero: hideCountWhenZero
 	});
 	cartState.initFromSession();
 
@@ -105,6 +108,7 @@ onReady(function() {
 		emit: emit,
 		mode: mode,
 		openTriggerElementId: openTriggerElementId,
+		lockPageScroll: lockPageScroll,
 		onRenderCart: renderer.renderCart,
 		onRefreshCart: storeApi.refreshCart,
 		onRecoverFromStoreApiFailure: function(options) {

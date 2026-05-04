@@ -157,6 +157,7 @@
   function createCartState(options) {
     var wcSideCart = options && options.wcSideCart ? options.wcSideCart : null;
     var badgeElementId = options && options.badgeElementId ? options.badgeElementId : "";
+    var hideCountWhenZero = options && typeof options.hideCountWhenZero === "boolean" ? options.hideCountWhenZero : false;
     var storeApiNonceStorageKey = "wcSideCartStoreApiNonce";
     var cartTokenStorageKey = "wcSideCartCartToken";
     function getSessionValue(key) {
@@ -221,13 +222,34 @@
     }
     function updateCountFromCart(cart) {
       var count = String(getCartItemCount(cart));
+      var isZero = count === "0";
+      function setHidden(el, value) {
+        if (!el || !el.setAttribute || !el.removeAttribute) {
+          return;
+        }
+        if (value) {
+          el.setAttribute("hidden", "hidden");
+          return;
+        }
+        el.removeAttribute("hidden");
+      }
       qsa(".js-side-cart-number, #wc-side-cart-panel .side-cart__number, a.js-side-cart-open .side-cart__number").forEach(function(el) {
         el.textContent = count;
+        if (hideCountWhenZero) {
+          setHidden(el, isZero);
+          return;
+        }
+        setHidden(el, false);
       });
       if (badgeElementId) {
         var badge = document.getElementById(badgeElementId);
         if (badge) {
           badge.textContent = count;
+          if (hideCountWhenZero) {
+            setHidden(badge, isZero);
+            return;
+          }
+          setHidden(badge, false);
         }
       }
     }
@@ -1678,6 +1700,7 @@
     };
     var mode = options && options.mode ? options.mode : "ui";
     var openTriggerElementId = options && options.openTriggerElementId ? options.openTriggerElementId : "";
+    var lockPageScroll = options && typeof options.lockPageScroll === "boolean" ? options.lockPageScroll : true;
     var onRenderCart = options && typeof options.onRenderCart === "function" ? options.onRenderCart : function() {
     };
     var onRefreshCart = options && typeof options.onRefreshCart === "function" ? options.onRefreshCart : function() {
@@ -1729,6 +1752,9 @@
       return qs(getSelector("backdrop"));
     }
     function lockScroll() {
+      if (!lockPageScroll) {
+        return;
+      }
       if (document.body.classList.contains("wc-side-cart-scroll-lock")) {
         return;
       }
@@ -1740,6 +1766,9 @@
       document.body.classList.add("wc-side-cart-scroll-lock");
     }
     function unlockScroll() {
+      if (!lockPageScroll) {
+        return;
+      }
       document.body.classList.remove("wc-side-cart-scroll-lock");
       document.body.style.paddingRight = previousBodyPaddingRight;
     }
@@ -2480,6 +2509,8 @@
     }
     var badgeElementId = typeof uiSettings.badgeElementId === "string" ? uiSettings.badgeElementId.trim() : "";
     var openTriggerElementId = typeof uiSettings.openTriggerElementId === "string" ? uiSettings.openTriggerElementId.trim() : "";
+    var lockPageScroll = typeof uiSettings.lockPageScroll === "boolean" ? uiSettings.lockPageScroll : true;
+    var hideCountWhenZero = typeof uiSettings.hideCountWhenZero === "boolean" ? uiSettings.hideCountWhenZero : false;
     var autoOpenOnAddToCart = typeof uiSettings.autoOpenOnAddToCart === "boolean" ? uiSettings.autoOpenOnAddToCart : false;
     var disableUiListeners = typeof uiSettings.disableUiListeners === "boolean" ? uiSettings.disableUiListeners : false;
     var onCartClickBehaviour = typeof paritySettings.onCartClickBehaviour === "string" ? paritySettings.onCartClickBehaviour.trim().toLowerCase() : "open_drawer";
@@ -2488,7 +2519,8 @@
     }
     var cartState = createCartState({
       wcSideCart: wcSideCart,
-      badgeElementId: badgeElementId
+      badgeElementId: badgeElementId,
+      hideCountWhenZero: hideCountWhenZero
     });
     cartState.initFromSession();
     var storeApi = createStoreApiClient({
@@ -2509,6 +2541,7 @@
       emit: emit,
       mode: mode,
       openTriggerElementId: openTriggerElementId,
+      lockPageScroll: lockPageScroll,
       onRenderCart: renderer.renderCart,
       onRefreshCart: storeApi.refreshCart,
       onRecoverFromStoreApiFailure: function(options) {

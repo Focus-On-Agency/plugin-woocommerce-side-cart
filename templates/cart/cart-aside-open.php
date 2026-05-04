@@ -26,6 +26,15 @@ if ( ! $show_floating_icon ) {
 	return;
 }
 
+$hide_count_when_zero = false;
+if ( isset( $config['ui'] ) && is_array( $config['ui'] ) && isset( $config['ui']['hideCountWhenZero'] ) ) {
+	$hide_count_when_zero = (bool) $config['ui']['hideCountWhenZero'];
+}
+
+$raw_svg = apply_filters( 'wc_side_cart_icon_svg', '', 'floating', $config );
+$svg = WCSC_IconSvgSanitizer::sanitizeSvg( $raw_svg );
+$has_svg = ( $svg !== '' );
+
 $extra_classes = '';
 if ( isset( $config['cssClasses'] ) && is_array( $config['cssClasses'] ) && isset( $config['cssClasses']['floatingIcon'] ) ) {
 	$raw = (string) $config['cssClasses']['floatingIcon'];
@@ -47,6 +56,9 @@ if ( isset( $config['cssClasses'] ) && is_array( $config['cssClasses'] ) && isse
 }
 
 $class_attr = trim( 'js-side-cart-icon js-side-cart-open side-cart__icon side-cart__icon--outer side-cart__icon--mob ' . $extra_classes );
+if ( $has_svg ) {
+	$class_attr .= ' side-cart__icon--svg';
+}
 
 $href = wc_get_cart_url();
 if ( isset( $config['parity'] ) && is_array( $config['parity'] ) && isset( $config['parity']['onCartClickBehaviour'] ) ) {
@@ -65,7 +77,12 @@ if ( isset( $config['parity'] ) && is_array( $config['parity'] ) && isset( $conf
 	aria-expanded="false"
 >
 	<span class="screen-reader-text"><?php echo esc_html__( 'Cart', 'woocommerce' ); ?></span>
-    
-    <span class="side-cart__number js-side-cart-number"><?php echo esc_html( absint( WC()->cart->cart_contents_count ) ); ?></span>
-    
+	<?php if ( $has_svg ) : ?>
+		<span class="side-cart__icon_svg" aria-hidden="true"><?php echo $svg; ?></span>
+	<?php endif; ?>
+
+	<?php $count = absint( WC()->cart->cart_contents_count ); ?>
+	<span class="side-cart__number js-side-cart-number" <?php echo ( $hide_count_when_zero && $count === 0 ) ? 'hidden="hidden"' : ''; ?>>
+		<?php echo esc_html( $count ); ?>
+	</span>
 </a>

@@ -120,6 +120,8 @@ class WCSC_SettingsValidator {
 			'showTotal' => false,
 			'showCoupons' => false,
 			'showFloatingCartIcon' => true,
+			'lockPageScroll' => true,
+			'hideCountWhenZero' => false,
 			'openTriggerElementId' => '',
 			'badgeElementId' => '',
 			'autoOpenOnAddToCart' => false,
@@ -127,7 +129,7 @@ class WCSC_SettingsValidator {
 		);
 		$ui = $uiDefaults;
 		if ( isset( $config['ui'] ) && is_array( $config['ui'] ) ) {
-			foreach ( array( 'showViewCartButton', 'showCheckoutButton', 'showItemRemove', 'showItemQuantity', 'enableQuantityEditing', 'showItemPrice', 'showItemThumbnail', 'showSubtotal', 'showShipping', 'showTaxes', 'showTotal', 'showCoupons', 'showFloatingCartIcon', 'autoOpenOnAddToCart', 'disableUiListeners' ) as $flag ) {
+			foreach ( array( 'showViewCartButton', 'showCheckoutButton', 'showItemRemove', 'showItemQuantity', 'enableQuantityEditing', 'showItemPrice', 'showItemThumbnail', 'showSubtotal', 'showShipping', 'showTaxes', 'showTotal', 'showCoupons', 'showFloatingCartIcon', 'lockPageScroll', 'hideCountWhenZero', 'autoOpenOnAddToCart', 'disableUiListeners' ) as $flag ) {
 				if ( isset( $config['ui'][ $flag ] ) ) {
 					$ui[ $flag ] = (bool) $config['ui'][ $flag ];
 				}

@@ -12,6 +12,7 @@ export function createA11yController(options) {
 	var emit = options && options.emit ? options.emit : function() {};
 	var mode = options && options.mode ? options.mode : 'ui';
 	var openTriggerElementId = options && options.openTriggerElementId ? options.openTriggerElementId : '';
+	var lockPageScroll = (options && typeof options.lockPageScroll === 'boolean') ? options.lockPageScroll : true;
 
 	var onRenderCart = options && typeof options.onRenderCart === 'function' ? options.onRenderCart : function() {};
 	var onRefreshCart = options && typeof options.onRefreshCart === 'function' ? options.onRefreshCart : function() { return Promise.reject(new Error('Missing refreshCart callback')); };
@@ -70,6 +71,9 @@ export function createA11yController(options) {
 	}
 
 	function lockScroll() {
+		if (!lockPageScroll) {
+			return;
+		}
 		if (document.body.classList.contains('wc-side-cart-scroll-lock')) {
 			return;
 		}
@@ -82,6 +86,9 @@ export function createA11yController(options) {
 	}
 
 	function unlockScroll() {
+		if (!lockPageScroll) {
+			return;
+		}
 		document.body.classList.remove('wc-side-cart-scroll-lock');
 		document.body.style.paddingRight = previousBodyPaddingRight;
 	}
