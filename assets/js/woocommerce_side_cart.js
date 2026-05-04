@@ -160,6 +160,39 @@
     var hideCountWhenZero = options && typeof options.hideCountWhenZero === "boolean" ? options.hideCountWhenZero : false;
     var storeApiNonceStorageKey = "wcSideCartStoreApiNonce";
     var cartTokenStorageKey = "wcSideCartCartToken";
+    var wooCartHashStorageKey = "wcSideCartWooCartHash";
+    function getCookieValue(name) {
+      try {
+        if (typeof document === "undefined" || !document.cookie) {
+          return "";
+        }
+        var cookie = String(document.cookie);
+        var parts = cookie.split(";");
+        for (var i = 0; i < parts.length; i++) {
+          var part = parts[i];
+          if (!part) {
+            continue;
+          }
+          while (part.charAt(0) === " ") {
+            part = part.slice(1);
+          }
+          if (part.indexOf(name + "=") !== 0) {
+            continue;
+          }
+          var value = part.slice((name + "=").length);
+          try {
+            return decodeURIComponent(value);
+          } catch (e) {
+            return value;
+          }
+        }
+      } catch (e) {
+      }
+      return "";
+    }
+    function getWooCartHash() {
+      return getCookieValue("woocommerce_cart_hash") || "";
+    }
     function getSessionValue(key) {
       try {
         if (!window.sessionStorage) {
@@ -187,6 +220,15 @@
       if (!wcSideCart) {
         return;
       }
+      var currentWooCartHash = getWooCartHash();
+      var storedWooCartHash = getSessionValue(wooCartHashStorageKey);
+      if (storedWooCartHash && currentWooCartHash && storedWooCartHash !== currentWooCartHash) {
+        wcSideCart.cartToken = "";
+        setSessionValue(storeApiNonceStorageKey, "");
+        setSessionValue(cartTokenStorageKey, "");
+        setSessionValue(wooCartHashStorageKey, currentWooCartHash);
+        return;
+      }
       var storedNonce = getSessionValue(storeApiNonceStorageKey);
       if (storedNonce) {
         wcSideCart.storeApiNonce = storedNonce;
@@ -194,6 +236,9 @@
       var storedCartToken = getSessionValue(cartTokenStorageKey);
       if (storedCartToken) {
         wcSideCart.cartToken = storedCartToken;
+      }
+      if (currentWooCartHash && !storedWooCartHash) {
+        setSessionValue(wooCartHashStorageKey, currentWooCartHash);
       }
     }
     function updateFromResponseHeaders(headers) {
@@ -209,6 +254,10 @@
       if (refreshedCartToken) {
         wcSideCart.cartToken = refreshedCartToken;
         setSessionValue(cartTokenStorageKey, refreshedCartToken);
+      }
+      var currentWooCartHash = getWooCartHash();
+      if (currentWooCartHash) {
+        setSessionValue(wooCartHashStorageKey, currentWooCartHash);
       }
     }
     function clearTokens() {
@@ -549,7 +598,7 @@
       var value = getCacheBustingValue(settings.strategy);
       return appendQueryParam(url, settings.param, value);
     }
-    function request(url, method, body, signal) {
+    function request(url, method, body, signal, options2) {
       var headers = {};
       var nonce = cartState ? cartState.getStoreApiNonce() : "";
       if (nonce) {
@@ -557,7 +606,8 @@
         headers["X-WC-Store-API-Nonce"] = nonce;
       }
       var cartToken = cartState ? cartState.getCartToken() : "";
-      if (cartToken) {
+      var omitCartToken = !!(options2 && options2.omitCartToken);
+      if (cartToken && !omitCartToken) {
         headers["Cart-Token"] = cartToken;
       }
       if (method !== "GET") {
@@ -615,7 +665,22 @@
       if (refreshCartPromise) {
         return refreshCartPromise;
       }
-      refreshCartPromise = request(wcSideCart.endpoints.cart, "GET").catch(function(err) {
+      var hadCartToken = !!(cartState && cartState.getCartToken());
+      refreshCartPromise = request(wcSideCart.endpoints.cart, "GET").then(function(cart) {
+        var items = cart && cart.items ? cart.items : [];
+        if (hadCartToken && Array.isArray(items) && items.length === 0) {
+          return request(wcSideCart.endpoints.cart, "GET", void 0, void 0, { omitCartToken: true }).then(function(fallbackCart) {
+            var fallbackItems = fallbackCart && fallbackCart.items ? fallbackCart.items : [];
+            if (Array.isArray(fallbackItems) && fallbackItems.length) {
+              return fallbackCart;
+            }
+            return cart;
+          }).catch(function() {
+            return cart;
+          });
+        }
+        return cart;
+      }).catch(function(err) {
         if (cartState) {
           cartState.clearTokens();
         }
@@ -862,6 +927,15 @@
       compositeGroupMode = "flat";
     }
     var compositeShowChildren = typeof compositeSettings.showChildren === "boolean" ? compositeSettings.showChildren : true;
+    var compositeSummarySettings = compositeSettings && typeof compositeSettings.summary === "object" && compositeSettings.summary ? compositeSettings.summary : {};
+    var compositeSummaryLabelSource = typeof compositeSummarySettings.labelSource === "string" ? compositeSummarySettings.labelSource.trim().toLowerCase() : "component_title";
+    if (["component_title", "name"].indexOf(compositeSummaryLabelSource) === -1) {
+      compositeSummaryLabelSource = "component_title";
+    }
+    var compositeSummarySeparator = typeof compositeSummarySettings.separator === "string" ? compositeSummarySettings.separator : " \xB7 ";
+    if (!compositeSummarySeparator || !compositeSummarySeparator.trim()) {
+      compositeSummarySeparator = " \xB7 ";
+    }
     var toastHost = null;
     var toastTimer = null;
     function ensureToastHost() {
@@ -1532,7 +1606,7 @@
         if (!entry) {
           return;
         }
-        if (groupedMode && !compositeShowChildren && entry.kind === "child") {
+        if (!compositeShowChildren && entry.kind === "child") {
           return;
         }
         displayed.push(item);
@@ -1602,7 +1676,7 @@
           title.appendChild(document.createTextNode(item.name || ""));
         }
         main.appendChild(title);
-        if (isParent && groupedMode && compositeGroupMode === "parent" && !compositeShowChildren) {
+        if (isParent && !compositeShowChildren) {
           var childNames = [];
           var childKeys = entry.childrenKeys && entry.childrenKeys.length ? entry.childrenKeys : [];
           childKeys.forEach(function(childKey) {
@@ -1612,7 +1686,12 @@
             }
             var childCompositeMeta = getCompositeMeta(childItem);
             var childCompositedMeta = childCompositeMeta && childCompositeMeta.composited_item_data && typeof childCompositeMeta.composited_item_data === "object" ? childCompositeMeta.composited_item_data : null;
-            var childLabel = childCompositedMeta && childCompositedMeta.component_title ? String(childCompositedMeta.component_title) : childItem.name || "";
+            var childLabel = "";
+            if (compositeSummaryLabelSource === "name") {
+              childLabel = childItem.name || "";
+            } else {
+              childLabel = childCompositedMeta && childCompositedMeta.component_title ? String(childCompositedMeta.component_title) : childItem.name || "";
+            }
             if (!childLabel) {
               return;
             }
@@ -1621,7 +1700,7 @@
           if (childNames.length) {
             var childrenSummary = document.createElement("div");
             childrenSummary.className = "wcsc-parent-children-summary";
-            childrenSummary.textContent = childNames.join(" \xB7 ");
+            childrenSummary.textContent = childNames.join(compositeSummarySeparator);
             main.appendChild(childrenSummary);
           }
         }

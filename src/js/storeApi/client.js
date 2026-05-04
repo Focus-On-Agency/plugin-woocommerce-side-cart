@@ -318,7 +318,7 @@ export function createStoreApiClient(options) {
 		return appendQueryParam(url, settings.param, value);
 	}
 
-	function request(url, method, body, signal) {
+	function request(url, method, body, signal, options) {
 		var headers = {};
 
 		var nonce = cartState ? cartState.getStoreApiNonce() : '';
@@ -328,7 +328,8 @@ export function createStoreApiClient(options) {
 		}
 
 		var cartToken = cartState ? cartState.getCartToken() : '';
-		if (cartToken) {
+		var omitCartToken = !!(options && options.omitCartToken);
+		if (cartToken && !omitCartToken) {
 			headers['Cart-Token'] = cartToken;
 		}
 
@@ -392,7 +393,22 @@ export function createStoreApiClient(options) {
 			return refreshCartPromise;
 		}
 
-		refreshCartPromise = request(wcSideCart.endpoints.cart, 'GET').catch(function(err) {
+		var hadCartToken = !!(cartState && cartState.getCartToken());
+		refreshCartPromise = request(wcSideCart.endpoints.cart, 'GET').then(function(cart) {
+			var items = cart && cart.items ? cart.items : [];
+			if (hadCartToken && Array.isArray(items) && items.length === 0) {
+				return request(wcSideCart.endpoints.cart, 'GET', undefined, undefined, { omitCartToken: true }).then(function(fallbackCart) {
+					var fallbackItems = fallbackCart && fallbackCart.items ? fallbackCart.items : [];
+					if (Array.isArray(fallbackItems) && fallbackItems.length) {
+						return fallbackCart;
+					}
+					return cart;
+				}).catch(function() {
+					return cart;
+				});
+			}
+			return cart;
+		}).catch(function(err) {
 			if (cartState) {
 				cartState.clearTokens();
 			}

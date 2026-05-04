@@ -14,6 +14,40 @@ export function createCartState(options) {
 
 	var storeApiNonceStorageKey = 'wcSideCartStoreApiNonce';
 	var cartTokenStorageKey = 'wcSideCartCartToken';
+	var wooCartHashStorageKey = 'wcSideCartWooCartHash';
+
+	function getCookieValue(name) {
+		try {
+			if (typeof document === 'undefined' || !document.cookie) {
+				return '';
+			}
+			var cookie = String(document.cookie);
+			var parts = cookie.split(';');
+			for (var i = 0; i < parts.length; i++) {
+				var part = parts[i];
+				if (!part) {
+					continue;
+				}
+				while (part.charAt(0) === ' ') {
+					part = part.slice(1);
+				}
+				if (part.indexOf(name + '=') !== 0) {
+					continue;
+				}
+				var value = part.slice((name + '=').length);
+				try {
+					return decodeURIComponent(value);
+				} catch (e) {
+					return value;
+				}
+			}
+		} catch (e) {}
+		return '';
+	}
+
+	function getWooCartHash() {
+		return getCookieValue('woocommerce_cart_hash') || '';
+	}
 
 	function getSessionValue(key) {
 		try {
@@ -43,6 +77,15 @@ export function createCartState(options) {
 		if (!wcSideCart) {
 			return;
 		}
+		var currentWooCartHash = getWooCartHash();
+		var storedWooCartHash = getSessionValue(wooCartHashStorageKey);
+		if (storedWooCartHash && currentWooCartHash && storedWooCartHash !== currentWooCartHash) {
+			wcSideCart.cartToken = '';
+			setSessionValue(storeApiNonceStorageKey, '');
+			setSessionValue(cartTokenStorageKey, '');
+			setSessionValue(wooCartHashStorageKey, currentWooCartHash);
+			return;
+		}
 		var storedNonce = getSessionValue(storeApiNonceStorageKey);
 		if (storedNonce) {
 			wcSideCart.storeApiNonce = storedNonce;
@@ -51,6 +94,9 @@ export function createCartState(options) {
 		var storedCartToken = getSessionValue(cartTokenStorageKey);
 		if (storedCartToken) {
 			wcSideCart.cartToken = storedCartToken;
+		}
+		if (currentWooCartHash && !storedWooCartHash) {
+			setSessionValue(wooCartHashStorageKey, currentWooCartHash);
 		}
 	}
 
@@ -69,6 +115,10 @@ export function createCartState(options) {
 		if (refreshedCartToken) {
 			wcSideCart.cartToken = refreshedCartToken;
 			setSessionValue(cartTokenStorageKey, refreshedCartToken);
+		}
+		var currentWooCartHash = getWooCartHash();
+		if (currentWooCartHash) {
+			setSessionValue(wooCartHashStorageKey, currentWooCartHash);
 		}
 	}
 
