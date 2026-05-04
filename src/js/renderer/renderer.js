@@ -17,10 +17,22 @@ function sanitizeClassString(value) {
 	if (!trimmed) {
 		return '';
 	}
-	if (!/^[A-Za-z0-9_\- ]+$/.test(trimmed)) {
-		return '';
+	var tokens = trimmed.split(' ');
+	var clean = [];
+	for (var i = 0; i < tokens.length; i++) {
+		var token = tokens[i] ? String(tokens[i]) : '';
+		if (!token) {
+			continue;
+		}
+		if (token.indexOf('\0') !== -1) {
+			continue;
+		}
+		if (/[\s"'<>]/.test(token)) {
+			continue;
+		}
+		clean.push(token);
 	}
-	return trimmed;
+	return clean.length ? clean.join(' ') : '';
 }
 
 export function createRenderer(options) {
@@ -33,6 +45,7 @@ export function createRenderer(options) {
 	var mode = options && options.mode ? options.mode : 'ui';
 
 	var uiSettings = settings.ui || {};
+	var compositeSettings = settings.composite || {};
 	var hooksHtml = settings.hooksHtml || {};
 	var cssClasses = settings.cssClasses || {};
 	var taxSettings = settings.tax || {};
@@ -94,6 +107,11 @@ export function createRenderer(options) {
 	var showTotal = (typeof uiSettings.showTotal === 'boolean') ? uiSettings.showTotal : false;
 	var showCoupons = (typeof uiSettings.showCoupons === 'boolean') ? uiSettings.showCoupons : false;
 	var showFloatingCartIcon = (typeof uiSettings.showFloatingCartIcon === 'boolean') ? uiSettings.showFloatingCartIcon : true;
+	var compositeGroupMode = (typeof compositeSettings.groupMode === 'string') ? compositeSettings.groupMode.trim().toLowerCase() : 'flat';
+	if (['flat', 'noindent', 'parent'].indexOf(compositeGroupMode) === -1) {
+		compositeGroupMode = 'flat';
+	}
+	var compositeShowChildren = (typeof compositeSettings.showChildren === 'boolean') ? compositeSettings.showChildren : true;
 
 	var toastHost = null;
 	var toastTimer = null;
@@ -166,6 +184,121 @@ export function createRenderer(options) {
 				el.classList.add(className);
 			}
 		});
+	}
+
+	function getNestedObject(source, keys) {
+		if (!source || typeof source !== 'object' || !keys || !keys.length) {
+			return null;
+		}
+		var current = source;
+		for (var i = 0; i < keys.length; i++) {
+			var key = keys[i];
+			if (!current || typeof current !== 'object' || typeof current[key] === 'undefined' || current[key] === null) {
+				return null;
+			}
+			current = current[key];
+		}
+		return current;
+	}
+
+	function toArrayValue(value) {
+		if (!value) {
+			return [];
+		}
+		if (Array.isArray(value)) {
+			return value;
+		}
+		if (typeof value === 'object') {
+			return Object.keys(value).map(function(key) {
+				return value[key];
+			});
+		}
+		return [];
+	}
+
+	function getCompositeMeta(item) {
+		return getNestedObject(item, ['extensions', 'composites']) || {};
+	}
+
+	function getChildParentKey(item) {
+		if (!item || typeof item !== 'object') {
+			return '';
+		}
+		var compositeMeta = getCompositeMeta(item);
+		if (compositeMeta && typeof compositeMeta.composite_parent === 'string' && compositeMeta.composite_parent) {
+			return compositeMeta.composite_parent;
+		}
+		if (typeof item.composite_parent === 'string' && item.composite_parent) {
+			return item.composite_parent;
+		}
+		if (typeof item.bundled_by === 'string' && item.bundled_by) {
+			return item.bundled_by;
+		}
+		return '';
+	}
+
+	function getParentChildrenKeys(item) {
+		if (!item || typeof item !== 'object') {
+			return [];
+		}
+		var compositeMeta = getCompositeMeta(item);
+		var compositeChildren = compositeMeta ? toArrayValue(compositeMeta.composite_children) : [];
+		if (compositeChildren.length) {
+			return compositeChildren.map(function(key) { return String(key); }).filter(Boolean);
+		}
+		if (Array.isArray(item.composite_children) && item.composite_children.length) {
+			return item.composite_children.map(function(key) { return String(key); }).filter(Boolean);
+		}
+		var bundledChildren = toArrayValue(item.bundled_items);
+		if (bundledChildren.length) {
+			return bundledChildren.map(function(key) { return String(key); }).filter(Boolean);
+		}
+		return [];
+	}
+
+	function buildHierarchy(items) {
+		var byKey = {};
+		(items || []).forEach(function(item) {
+			if (item && item.key) {
+				byKey[String(item.key)] = item;
+			}
+		});
+		var entries = {};
+		(items || []).forEach(function(item, index) {
+			if (!item || !item.key) {
+				return;
+			}
+			var key = String(item.key);
+			var parentKey = getChildParentKey(item);
+			var childrenKeys = getParentChildrenKeys(item);
+			var kind = 'standalone';
+			if (parentKey) {
+				kind = 'child';
+			} else if (childrenKeys.length) {
+				kind = 'parent';
+			}
+			entries[key] = {
+				item: item,
+				index: index,
+				key: key,
+				parentKey: parentKey,
+				childrenKeys: childrenKeys,
+				kind: kind
+			};
+		});
+		Object.keys(entries).forEach(function(key) {
+			var entry = entries[key];
+			if (!entry || entry.kind !== 'child') {
+				return;
+			}
+			if (entry.parentKey && entries[entry.parentKey] && entries[entry.parentKey].kind === 'standalone') {
+				entries[entry.parentKey].kind = 'parent';
+			}
+		});
+		return {
+			byKey: byKey,
+			entries: entries
+		};
 	}
 
 	function createHookTemplate(html) {
@@ -732,10 +865,41 @@ export function createRenderer(options) {
 		var fragment = document.createDocumentFragment();
 		appendHook(fragment, hookTemplates.aboveItems, 'wcsc-hook--above-items');
 
-		items.forEach(function(item, index) {
+		var hierarchy = buildHierarchy(items);
+		var entries = hierarchy.entries || {};
+		var groupedMode = compositeGroupMode !== 'flat';
+		var displayed = [];
+
+		items.forEach(function(item) {
 			if (!item || !item.key) {
 				return;
 			}
+			var entry = entries[String(item.key)];
+			if (!entry) {
+				return;
+			}
+			if (groupedMode && !compositeShowChildren && entry.kind === 'child') {
+				return;
+			}
+			displayed.push(item);
+		});
+
+		displayed.forEach(function(item, index) {
+			if (!item || !item.key) {
+				return;
+			}
+			var itemKey = String(item.key);
+			var entry = entries[itemKey] || {
+				kind: 'standalone',
+				parentKey: '',
+				childrenKeys: []
+			};
+			var compositeMeta = getCompositeMeta(item);
+			var compositedMeta = (compositeMeta && compositeMeta.composited_item_data && typeof compositeMeta.composited_item_data === 'object')
+				? compositeMeta.composited_item_data
+				: null;
+			var isChild = entry.kind === 'child';
+			var isParent = entry.kind === 'parent';
 
 			var wrapper = document.createElement('div');
 			var wrapperClasses = ['item', 'side-cart__item'];
@@ -748,8 +912,19 @@ export function createRenderer(options) {
 			if (extraParityClasses) {
 				wrapperClasses.push(extraParityClasses);
 			}
+			wrapperClasses.push(isChild ? 'wcsc-rel-child' : (isParent ? 'wcsc-rel-parent' : 'wcsc-rel-standalone'));
+			if (groupedMode && compositeGroupMode === 'parent') {
+				wrapperClasses.push('wcsc-group-mode-parent');
+			}
+			if (groupedMode && compositeGroupMode === 'noindent') {
+				wrapperClasses.push('wcsc-group-mode-noindent');
+			}
 			wrapper.className = wrapperClasses.join(' ').trim().replace(/\s+/g, ' ');
 			wrapper.setAttribute('data-cart_item_key', item.key);
+			wrapper.setAttribute('data-wcsc-item-kind', isChild ? 'child' : (isParent ? 'parent' : 'standalone'));
+			if (entry.parentKey) {
+				wrapper.setAttribute('data-wcsc-parent-key', entry.parentKey);
+			}
 
 			var row = document.createElement('div');
 			row.className = 'wcsc-row';
@@ -782,6 +957,32 @@ export function createRenderer(options) {
 				title.appendChild(document.createTextNode(item.name || ''));
 			}
 			main.appendChild(title);
+
+			if (isParent && groupedMode && compositeGroupMode === 'parent' && !compositeShowChildren) {
+				var childNames = [];
+				var childKeys = entry.childrenKeys && entry.childrenKeys.length ? entry.childrenKeys : [];
+				childKeys.forEach(function(childKey) {
+					var childItem = hierarchy.byKey && hierarchy.byKey[childKey] ? hierarchy.byKey[childKey] : null;
+					if (!childItem) {
+						return;
+					}
+					var childCompositeMeta = getCompositeMeta(childItem);
+					var childCompositedMeta = (childCompositeMeta && childCompositeMeta.composited_item_data && typeof childCompositeMeta.composited_item_data === 'object')
+						? childCompositeMeta.composited_item_data
+						: null;
+					var childLabel = childCompositedMeta && childCompositedMeta.component_title ? String(childCompositedMeta.component_title) : (childItem.name || '');
+					if (!childLabel) {
+						return;
+					}
+					childNames.push(childLabel);
+				});
+				if (childNames.length) {
+					var childrenSummary = document.createElement('div');
+					childrenSummary.className = 'wcsc-parent-children-summary';
+					childrenSummary.textContent = childNames.join(' · ');
+					main.appendChild(childrenSummary);
+				}
+			}
 
 			var quantity = parseInt(item.quantity, 10) || 0;
 			var hasUnitLine = false;
@@ -842,7 +1043,14 @@ export function createRenderer(options) {
 			actions.className = 'wcsc-actions';
 			var hasActions = false;
 
-			if (showItemRemove) {
+			var canRemove = true;
+			if (isChild && compositedMeta && typeof compositedMeta.is_removable !== 'undefined') {
+				canRemove = !!compositedMeta.is_removable;
+			}
+			if (!canRemove) {
+				wrapper.setAttribute('data-wcsc-remove-disabled', '1');
+			}
+			if (showItemRemove && canRemove) {
 				var removeLink = document.createElement('a');
 				removeLink.className = 'side-cart__remove_item js-remove-basket-item';
 				removeLink.setAttribute('data-cart_item_key', item.key);
@@ -859,7 +1067,11 @@ export function createRenderer(options) {
 				hasActions = true;
 			}
 
-			if (showItemPrice) {
+			var hidePrice = false;
+			if (isChild && compositedMeta && compositedMeta.is_price_hidden) {
+				hidePrice = true;
+			}
+			if (showItemPrice && !hidePrice) {
 				var price = document.createElement('div');
 				price.className = 'wcsc-price';
 				var strong = document.createElement('strong');
@@ -916,7 +1128,14 @@ export function createRenderer(options) {
 			bottom.className = 'wcsc-bottom';
 			var hasBottom = false;
 
-			if (enableQuantityEditing) {
+			var qtyEditable = true;
+			if (item.quantity_limits && typeof item.quantity_limits.editable !== 'undefined') {
+				qtyEditable = !!item.quantity_limits.editable;
+			}
+			if (!qtyEditable) {
+				wrapper.setAttribute('data-wcsc-qty-disabled', '1');
+			}
+			if (enableQuantityEditing && qtyEditable) {
 				var stepper = document.createElement('div');
 				stepper.className = 'wcsc-stepper';
 
@@ -958,7 +1177,7 @@ export function createRenderer(options) {
 			}
 			fragment.appendChild(wrapper);
 
-			if (item === items[0]) {
+			if (item === displayed[0]) {
 				appendHook(fragment, hookTemplates.afterFirstItem, 'wcsc-hook--after-first-item');
 			}
 		});

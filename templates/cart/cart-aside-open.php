@@ -31,8 +31,20 @@ if ( isset( $config['ui'] ) && is_array( $config['ui'] ) && isset( $config['ui']
 	$hide_count_when_zero = (bool) $config['ui']['hideCountWhenZero'];
 }
 
-$raw_svg = apply_filters( 'wc_side_cart_icon_svg', '', 'floating', $config );
-$svg = WCSC_IconSvgSanitizer::sanitizeSvg( $raw_svg );
+$icon_payload = apply_filters( 'wc_side_cart_icon_svg', '', 'floating', $config );
+$raw_icon_markup = '';
+$disable_icon_validation = false;
+if ( is_array( $icon_payload ) ) {
+	if ( isset( $icon_payload['html'] ) ) {
+		$raw_icon_markup = (string) $icon_payload['html'];
+	}
+	if ( isset( $icon_payload['disableValidation'] ) ) {
+		$disable_icon_validation = (bool) $icon_payload['disableValidation'];
+	}
+} elseif ( is_string( $icon_payload ) ) {
+	$raw_icon_markup = $icon_payload;
+}
+$svg = WCSC_IconSvgSanitizer::sanitizeMarkup( $raw_icon_markup, $disable_icon_validation );
 $has_svg = ( $svg !== '' );
 
 $extra_classes = '';
@@ -46,10 +58,13 @@ if ( isset( $config['cssClasses'] ) && is_array( $config['cssClasses'] ) && isse
 			if ( $token === '' ) {
 				continue;
 			}
-			$sanitized = sanitize_html_class( $token );
-			if ( $sanitized !== '' ) {
-				$clean[] = $sanitized;
+			if ( strpos( $token, "\0" ) !== false ) {
+				continue;
 			}
+			if ( preg_match( '/[\s"\'<>]/', $token ) ) {
+				continue;
+			}
+			$clean[] = $token;
 		}
 	}
 	$extra_classes = implode( ' ', $clean );

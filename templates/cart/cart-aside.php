@@ -23,8 +23,20 @@ if ( isset( $config['ui'] ) && is_array( $config['ui'] ) && isset( $config['ui']
 	$hide_count_when_zero = (bool) $config['ui']['hideCountWhenZero'];
 }
 
-$raw_svg = apply_filters( 'wc_side_cart_icon_svg', '', 'panel_header', $config );
-$svg = WCSC_IconSvgSanitizer::sanitizeSvg( $raw_svg );
+$icon_payload = apply_filters( 'wc_side_cart_icon_svg', '', 'panel_header', $config );
+$raw_icon_markup = '';
+$disable_icon_validation = false;
+if ( is_array( $icon_payload ) ) {
+	if ( isset( $icon_payload['html'] ) ) {
+		$raw_icon_markup = (string) $icon_payload['html'];
+	}
+	if ( isset( $icon_payload['disableValidation'] ) ) {
+		$disable_icon_validation = (bool) $icon_payload['disableValidation'];
+	}
+} elseif ( is_string( $icon_payload ) ) {
+	$raw_icon_markup = $icon_payload;
+}
+$svg = WCSC_IconSvgSanitizer::sanitizeMarkup( $raw_icon_markup, $disable_icon_validation );
 $has_svg = ( $svg !== '' );
 $icon_class_attr = 'side-cart__icon';
 if ( $has_svg ) {

@@ -90,6 +90,10 @@ class WCSC_ConfigLoader {
 				'onCartClickBehaviour' => 'open_drawer',
 				'blocksSyncDebug' => false,
 			),
+			'composite' => array(
+				'groupMode' => 'flat',
+				'showChildren' => true,
+			),
 			'ui' => array(
 				'showViewCartButton' => true,
 				'showCheckoutButton' => true,
@@ -209,6 +213,15 @@ class WCSC_ConfigLoader {
 			}
 			if ( isset( $configFromFile['parity']['blocksSyncDebug'] ) ) {
 				$config['parity']['blocksSyncDebug'] = (bool) $configFromFile['parity']['blocksSyncDebug'];
+			}
+		}
+
+		if ( isset( $configFromFile['composite'] ) && is_array( $configFromFile['composite'] ) ) {
+			if ( isset( $configFromFile['composite']['groupMode'] ) ) {
+				$config['composite']['groupMode'] = (string) $configFromFile['composite']['groupMode'];
+			}
+			if ( isset( $configFromFile['composite']['showChildren'] ) ) {
+				$config['composite']['showChildren'] = (bool) $configFromFile['composite']['showChildren'];
 			}
 		}
 
@@ -373,6 +386,17 @@ class WCSC_ConfigLoader {
 		$config['parity']['onCartClickBehaviour'] = $behaviour;
 
 		$config['parity']['blocksSyncDebug'] = isset( $config['parity']['blocksSyncDebug'] ) ? (bool) $config['parity']['blocksSyncDebug'] : (bool) $defaults['parity']['blocksSyncDebug'];
+
+		// Composite.
+		if ( ! isset( $config['composite'] ) || ! is_array( $config['composite'] ) ) {
+			$config['composite'] = $defaults['composite'];
+		}
+		$groupMode = isset( $config['composite']['groupMode'] ) ? strtolower( trim( (string) $config['composite']['groupMode'] ) ) : (string) $defaults['composite']['groupMode'];
+		if ( ! in_array( $groupMode, array( 'flat', 'noindent', 'parent' ), true ) ) {
+			$groupMode = (string) $defaults['composite']['groupMode'];
+		}
+		$config['composite']['groupMode'] = $groupMode;
+		$config['composite']['showChildren'] = isset( $config['composite']['showChildren'] ) ? (bool) $config['composite']['showChildren'] : (bool) $defaults['composite']['showChildren'];
 
 		// UI.
 		if ( ! isset( $config['ui'] ) || ! is_array( $config['ui'] ) ) {

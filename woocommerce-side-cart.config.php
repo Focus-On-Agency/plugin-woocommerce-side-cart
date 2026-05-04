@@ -5,6 +5,10 @@ return array(
 		'onCartClickBehaviour' => 'open_drawer',
 		'blocksSyncDebug' => false,
 	),
+	'composite' => array(
+		'groupMode' => 'flat',
+		'showChildren' => true,
+	),
 	'ui' => array(
 		'showViewCartButton' => true,
 		'showCheckoutButton' => true,

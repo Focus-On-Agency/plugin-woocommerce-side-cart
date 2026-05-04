@@ -178,6 +178,10 @@ export function setupUiListeners(options) {
 		if (!qtySel || !target || !target.matches(qtySel)) {
 			return;
 		}
+		var itemNode = target.closest(getSelector('item'));
+		if (itemNode && itemNode.getAttribute && itemNode.getAttribute('data-wcsc-qty-disabled') === '1') {
+			return;
+		}
 
 		var cartItemKey = target.getAttribute('data-cart_item_key');
 		var quantity = parseInt(target.value, 10);
@@ -211,6 +215,10 @@ export function setupUiListeners(options) {
 
 			var stepper = stepperButton.closest('.wcsc-stepper');
 			var input = stepper && qtySel ? qs(qtySel, stepper) : null;
+			var inputItemNode = input ? input.closest(getSelector('item')) : null;
+			if (inputItemNode && inputItemNode.getAttribute && inputItemNode.getAttribute('data-wcsc-qty-disabled') === '1') {
+				return;
+			}
 			var cartItemKey = input ? input.getAttribute('data-cart_item_key') : '';
 			var currentQty = input ? parseInt(input.value, 10) : NaN;
 			if (!input || !cartItemKey || isNaN(currentQty)) {
@@ -234,6 +242,10 @@ export function setupUiListeners(options) {
 		if (remove) {
 			e.preventDefault();
 			e.stopPropagation();
+			var removeItemNode = remove.closest(getSelector('item'));
+			if (removeItemNode && removeItemNode.getAttribute && removeItemNode.getAttribute('data-wcsc-remove-disabled') === '1') {
+				return;
+			}
 
 			var cartItemKey = remove.getAttribute('data-cart_item_key');
 			var fallbackUrl = remove.getAttribute('href') || ((wcSideCart && wcSideCart.urls && wcSideCart.urls.cart) ? wcSideCart.urls.cart : '/');

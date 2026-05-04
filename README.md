@@ -113,6 +113,9 @@ Root keys (top-level):
   - `cartCheckoutGating`: `"removed"` (default) | `"hidden"`
   - `onCartClickBehaviour`: `"open_drawer"` (default) | `"navigate_to_checkout"` | `"navigate_to_cart"` | `"navigate_to_url"`
   - `blocksSyncDebug`: `bool` (default `false`)
+- `composite`
+  - `groupMode`: `"flat"` (default) | `"noindent"` | `"parent"`
+  - `showChildren`: `bool` (default `true`)
 - `ui`
   - visibility/rows: `showViewCartButton`, `showCheckoutButton`, `showItemRemove`, `showItemQuantity`, `enableQuantityEditing`, `showItemLinks`, `showItemPrice`, `showItemThumbnail`, `showSubtotal`, `showShipping`, `showTaxes`, `showTotal`, `showCoupons` (`bool`)
   - triggers/badge: `openTriggerElementId` (`string`), `badgeElementId` (`string`)
@@ -158,6 +161,27 @@ Other flags:
 - `ui.badgeElementId`: id of an external element for the count badge
 - `ui.autoOpenOnAddToCart`: auto-open after add-to-cart
 
+## Composite/Bundles grouping (root `composite`)
+
+The `composite` root key controls parent/child rendering for both Composite Products and Product Bundles cart groups.
+
+- `composite.groupMode`
+  - `flat`: legacy flat rendering (backward-compatible default)
+  - `noindent`: parent/child rendered as grouped rows without child indentation
+  - `parent`: grouped rendering with parent-child visual hierarchy
+- `composite.showChildren`
+  - `true`: render child rows
+  - `false`: hide child rows and disable child actions in drawer
+
+Behavior matrix:
+
+- `flat + showChildren=true`: current behavior
+- `flat + showChildren=false`: child rows hidden (actions on hidden child rows disabled)
+- `noindent + showChildren=true`: parent/child visible, no child indent
+- `noindent + showChildren=false`: only parent/standalone visible
+- `parent + showChildren=true`: parent/child grouped with hierarchy
+- `parent + showChildren=false`: only parent visible with child labels aggregated in parent row
+
 ## Styling (CSS Variables)
 
 The look is primarily driven by `--wcsc-*` variables (you can pass them via `cssVars` in config).
@@ -173,9 +197,11 @@ Typical tokens:
 
 Note: only variables matching `^--wcsc-[a-z0-9_-]+$` are accepted.
 
-## Icon (SVG) override
+## Icon (HTML/SVG) override
 
-The built-in icon uses an icon font via CSS (`.side-cart__icon::before`). You can replace it with an inline SVG via a PHP filter:
+The built-in icon uses an icon font via CSS (`.side-cart__icon::before`). You can replace it via PHP filter `wc_side_cart_icon_svg`.
+
+Legacy format (string return, sanitized server-side):
 
 ```php
 add_filter( 'wc_side_cart_icon_svg', function( $svg, $context, $config ) {
@@ -186,10 +212,27 @@ add_filter( 'wc_side_cart_icon_svg', function( $svg, $context, $config ) {
 }, 10, 3 );
 ```
 
+Extended format (return array) to pass generic HTML and optionally disable validation:
+
+```php
+add_filter( 'wc_side_cart_icon_svg', function( $value, $context, $config ) {
+	if ( $context !== 'floating' ) {
+		return $value;
+	}
+	return array(
+		'html' => '<span class="my-cart-icon" aria-hidden="true">🛒</span>',
+		'disableValidation' => true,
+	);
+}, 10, 3 );
+```
+
 Notes:
 
-- The SVG is sanitized server-side (unsafe tags/attrs are removed).
-- When a valid SVG is returned, the template adds `side-cart__icon--svg` and outputs the SVG inside `.side-cart__icon_svg`.
+- If the filter returns a string, it is treated as icon markup and sanitized server-side.
+- If the filter returns an array, supported keys are:
+  - `html` (string): icon markup to render
+  - `disableValidation` (bool): when `true`, server-side validation is skipped
+- The icon container still gets `side-cart__icon--svg` when custom markup is present and renders inside `.side-cart__icon_svg`.
 
 ## Extra classes (cssClasses)
 
@@ -197,6 +240,11 @@ For structural customizations you can add extra classes via config:
 
 - `cssClasses.panel`, `backdrop`, `container`, `header`, `form`, `items`, `item`, `footer`, `totals`, `coupon`, `floatingIcon`
 - `cssClasses.itemOdd` / `itemEven`: classes added to items based on parity (useful for theme overrides)
+
+TailwindCSS v4 note:
+
+- `cssClasses.*` supports Tailwind classes including arbitrary variants/selectors (e.g. `[&_a]:hover:no-underline`, `data-[state=open]:bg-red-500`).
+- Sanitization is token-based: tokens containing whitespace or any of `"`, `'`, `<`, `>` are dropped.
 
 ## Hook HTML (hooksHtml)
 

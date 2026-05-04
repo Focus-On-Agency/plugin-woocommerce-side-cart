@@ -323,6 +323,25 @@ body.wc-side-cart-is-open #wc-side-cart-panel {
 	filter: saturate(0.9);
 }
 
+.side-cart__item.wcsc-rel-child.wcsc-group-mode-parent {
+	padding-left: 14px;
+}
+
+.side-cart__item.wcsc-rel-child.wcsc-group-mode-parent .wcsc-thumb {
+	opacity: 0.88;
+}
+
+.side-cart__item.wcsc-rel-child.wcsc-group-mode-noindent {
+	padding-left: 0;
+}
+
+.wcsc-parent-children-summary {
+	margin-top: 5px;
+	font-size: var(--wcsc-type-xs);
+	color: var(--wcsc-text);
+	opacity: 0.62;
+}
+
 .wcsc-row {
 	display: grid;
 	grid-template-columns: 56px 1fr auto;

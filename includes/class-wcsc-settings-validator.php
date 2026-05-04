@@ -75,6 +75,23 @@ class WCSC_SettingsValidator {
 			}
 		}
 
+		$compositeDefaults = array(
+			'groupMode' => 'flat',
+			'showChildren' => true,
+		);
+		$composite = $compositeDefaults;
+		if ( isset( $config['composite'] ) && is_array( $config['composite'] ) ) {
+			if ( isset( $config['composite']['groupMode'] ) ) {
+				$groupMode = strtolower( trim( (string) $config['composite']['groupMode'] ) );
+				if ( in_array( $groupMode, array( 'flat', 'noindent', 'parent' ), true ) ) {
+					$composite['groupMode'] = $groupMode;
+				}
+			}
+			if ( isset( $config['composite']['showChildren'] ) ) {
+				$composite['showChildren'] = (bool) $config['composite']['showChildren'];
+			}
+		}
+
 		$dom = array( 'selectors' => array() );
 		if ( isset( $config['dom'] ) && is_array( $config['dom'] ) && isset( $config['dom']['selectors'] ) && is_array( $config['dom']['selectors'] ) ) {
 			$dom['selectors'] = $this->normalizeDomSelectors( $config['dom']['selectors'] );
@@ -159,6 +176,7 @@ class WCSC_SettingsValidator {
 			'tax' => $tax,
 			'storeApi' => $storeApi,
 			'parity' => $parity,
+			'composite' => $composite,
 			'dom' => $dom,
 			'ui' => $ui,
 			'cssClasses' => $cssClasses,

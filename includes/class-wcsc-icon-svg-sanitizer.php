@@ -10,28 +10,55 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class WCSC_IconSvgSanitizer {
 	/**
+	 * @param mixed $markup Raw icon markup.
+	 * @param bool  $disableValidation Disable sanitization.
+	 * @return string
+	 */
+	public static function sanitizeMarkup( $markup, $disableValidation ) {
+		if ( ! is_string( $markup ) ) {
+			return '';
+		}
+
+		$markup = trim( $markup );
+		if ( $markup === '' ) {
+			return '';
+		}
+
+		if ( strpos( $markup, "\0" ) !== false ) {
+			return '';
+		}
+
+		if ( $disableValidation ) {
+			return $markup;
+		}
+
+		if ( function_exists( 'wp_kses' ) ) {
+			return (string) wp_kses( $markup, self::allowedIconTags() );
+		}
+
+		return $markup;
+	}
+
+	/**
 	 * @param mixed $svg Raw SVG markup.
 	 * @return string
 	 */
 	public static function sanitizeSvg( $svg ) {
-		if ( ! is_string( $svg ) ) {
-			return '';
-		}
+		return self::sanitizeMarkup( $svg, false );
+	}
 
-		$svg = trim( $svg );
-		if ( $svg === '' ) {
-			return '';
+	/**
+	 * @return array
+	 */
+	private static function allowedIconTags() {
+		$postTags = array();
+		if ( function_exists( 'wp_kses_allowed_html' ) ) {
+			$postTags = wp_kses_allowed_html( 'post' );
 		}
-
-		if ( strpos( $svg, "\0" ) !== false ) {
-			return '';
+		if ( ! is_array( $postTags ) ) {
+			$postTags = array();
 		}
-
-		if ( function_exists( 'wp_kses' ) ) {
-			return (string) wp_kses( $svg, self::allowedSvgTags() );
-		}
-
-		return $svg;
+		return array_merge( $postTags, self::allowedSvgTags() );
 	}
 
 	/**
@@ -186,4 +213,3 @@ class WCSC_IconSvgSanitizer {
 		);
 	}
 }
-
