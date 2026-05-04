@@ -42,7 +42,7 @@ class WCSC_CssVarsSanitizer {
 			return '';
 		}
 
-		return '.side-cart{' . implode( '', $declarations ) . '}';
+		return '#wc-side-cart-panel, .side-cart{' . implode( '', $declarations ) . '}';
 	}
 
 	/**
@@ -81,4 +81,3 @@ class WCSC_CssVarsSanitizer {
 		return $value;
 	}
 }
-
