@@ -1,9 +1,48 @@
 {
   "name": "focuson/woocommerce-side-cart",
-  "type": "wordpress-plugin",
   "description": "Lightweight side cart drawer powered by WooCommerce (Store API). Toggle via icon/menu link or a custom trigger element.",
+  "license": "GPL-2.0-or-later",
+  "type": "wordpress-plugin",
   "require": {
-    "php": ">=8.2",
-    "composer/installers": "^2.0"
+    "php": ">=8.2"
+  },
+  "scripts": {
+    "validate:composer": "composer validate --strict"
+  },
+  "archive": {
+    "exclude": [
+      "/.github/",
+      "/.ddev/",
+      "/.trae/",
+      "/bin/",
+      "/tests/",
+      "/scripts/",
+      "/test-site/",
+      "/docs/",
+      "/node_modules/",
+      "/composer.lock",
+      "/phpcs.xml",
+      "/phpcs.xml.dist",
+      "/.phpcs.xml",
+      "/phpunit.xml",
+      "/phpunit.xml.dist",
+      "/.phpunit.result.cache",
+      "/pnpm-lock.yaml",
+      "/yarn.lock",
+      "/vite.config.*",
+      "/tailwind.config.*",
+      "/postcss.config.*",
+      "/docker-compose.yml",
+      "/.gitlab-ci.yml",
+      "/.editorconfig",
+      "/.eslint*",
+      "/.prettier*",
+      "/.gitignore",
+      "/.gitattributes",
+      "/.distignore",
+      "/package*.json",
+      "/webpack*.js",
+      "/README.md"
+    ]
   }
 }
