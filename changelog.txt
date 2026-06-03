@@ -12,5 +12,11 @@
 2026.06.03 - version 3.2.3
  * Fix: autoOpenOnAddToCart now supports added_to_cart payloads that pass a DOM element as $button (not only jQuery objects).
 
+2026.06.03 - version 3.2.4
+ * Fix: autoOpenOnAddToCart now also opens when added_to_cart is triggered without passing $button/fragments arguments.
+
+2026.06.03 - version 3.2.5
+ * Fix: autoOpenOnAddToCart now supports added_to_cart emitted as a CustomEvent (payload in event.detail).
+
 2015.04.22 - version 1.0.0
  * Initial Release.

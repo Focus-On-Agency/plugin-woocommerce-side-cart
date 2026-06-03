@@ -370,13 +370,25 @@ export function setupUiListeners(options) {
 		var $body = window.jQuery(document.body);
 		if ($body && $body.on) {
 			$body.on('added_to_cart', function(event, fragments, cartHash, $button) {
+				if ((!fragments || !cartHash || !$button) && event && event.originalEvent && event.originalEvent.detail && event.originalEvent.detail.length === 3) {
+					fragments = event.originalEvent.detail[0];
+					cartHash = event.originalEvent.detail[1];
+					$button = event.originalEvent.detail[2];
+				}
 				var buttonEl = null;
 				if ($button && $button[0]) {
 					buttonEl = $button[0];
 				} else if ($button && $button.nodeType === 1) {
 					buttonEl = $button;
 				}
-				var shouldAutoOpen = autoOpenOnAddToCart && !!(buttonEl && buttonEl.matches && buttonEl.matches('a.add_to_cart_button.ajax_add_to_cart, button.single_add_to_cart_button'));
+				var shouldAutoOpen = false;
+				if (autoOpenOnAddToCart) {
+					if (!buttonEl) {
+						shouldAutoOpen = true;
+					} else if (buttonEl.matches && buttonEl.matches('a.add_to_cart_button.ajax_add_to_cart, button.single_add_to_cart_button')) {
+						shouldAutoOpen = true;
+					}
+				}
 				refreshFromExternalCartChange({ shouldAutoOpen: shouldAutoOpen });
 			});
 		}
