@@ -19,6 +19,7 @@ import { createRenderer } from './renderer/renderer.js';
 import { createA11yController } from './a11y/a11yController.js';
 import { createA11yAnnouncer } from './a11y/announcer.js';
 import { setupUiListeners } from './ui/listeners.js';
+import { moneyFormatValue, getCartItemCount } from './utils/money.js';
 
 onReady(function() {
 	var wcSideCart = window.wcSideCart || null;
@@ -33,11 +34,19 @@ onReady(function() {
 	var settings = wcSideCart.settings || {};
 	var uiSettings = settings.ui || {};
 	var paritySettings = settings.parity || {};
+	var storeApiSettings = settings.storeApi || {};
+	var hydrationSettings = storeApiSettings.hydration || {};
 
 	var mode = (typeof settings.mode === 'string') ? settings.mode.trim().toLowerCase() : 'ui';
 	if (mode !== 'ui' && mode !== 'headless') {
 		mode = 'ui';
 	}
+
+	var hydrationOnLoad = (typeof hydrationSettings.onLoad === 'string') ? hydrationSettings.onLoad.trim().toLowerCase() : 'never';
+	if (['never', 'ifcartcookie', 'always'].indexOf(hydrationOnLoad) === -1) {
+		hydrationOnLoad = 'never';
+	}
+	var hydrationUpdateHooksContext = (typeof hydrationSettings.updateHooksContext === 'boolean') ? hydrationSettings.updateHooksContext : true;
 
 	var domSettings = settings.dom || {};
 	var domSelectors = (domSettings && domSettings.selectors && typeof domSettings.selectors === 'object') ? domSettings.selectors : {};
@@ -67,6 +76,48 @@ onReady(function() {
 
 	function emit(name, detail) {
 		document.body.dispatchEvent(new CustomEvent(name, { detail: detail || {} }));
+	}
+
+	function getCookieValue(name) {
+		try {
+			if (typeof document === 'undefined' || !document.cookie) {
+				return '';
+			}
+			var cookie = String(document.cookie);
+			var parts = cookie.split(';');
+			for (var i = 0; i < parts.length; i++) {
+				var part = parts[i];
+				if (!part) {
+					continue;
+				}
+				while (part.charAt(0) === ' ') {
+					part = part.slice(1);
+				}
+				if (part.indexOf(name + '=') !== 0) {
+					continue;
+				}
+				var value = part.slice((name + '=').length);
+				try {
+					return decodeURIComponent(value);
+				} catch (e) {
+					return value;
+				}
+			}
+		} catch (e) {}
+		return '';
+	}
+
+	function hasCartCookie() {
+		var hash = getCookieValue('woocommerce_cart_hash');
+		if (hash) {
+			return true;
+		}
+		var items = getCookieValue('woocommerce_items_in_cart');
+		if (!items) {
+			return false;
+		}
+		var parsed = parseInt(items, 10);
+		return !isNaN(parsed) && parsed > 0;
 	}
 
 	var badgeElementId = (typeof uiSettings.badgeElementId === 'string') ? uiSettings.badgeElementId.trim() : '';
@@ -137,6 +188,27 @@ onReady(function() {
 		}
 	}
 
+	function updateHooksContextFromCart(cart) {
+		if (!hydrationUpdateHooksContext) {
+			return;
+		}
+		if (!wcSideCart || !wcSideCart.settings) {
+			return;
+		}
+		if (!wcSideCart.settings.hooksContext || typeof wcSideCart.settings.hooksContext !== 'object') {
+			wcSideCart.settings.hooksContext = {};
+		}
+		var hooksContext = wcSideCart.settings.hooksContext;
+		if (!hooksContext.cart || typeof hooksContext.cart !== 'object') {
+			hooksContext.cart = {};
+		}
+		var totals = cart && cart.totals ? cart.totals : {};
+
+		hooksContext.cart.count = getCartItemCount(cart || {});
+		hooksContext.cart.subtotal = (totals && typeof totals.total_items !== 'undefined' && totals.total_items !== null) ? moneyFormatValue(totals.total_items, totals) : '';
+		hooksContext.cart.total = (totals && typeof totals.total_price !== 'undefined' && totals.total_price !== null) ? moneyFormatValue(totals.total_price, totals) : '';
+	}
+
 	// Expose the renderer extension points on the public object (contract).
 	wcSideCart.renderers = renderer.renderers;
 	wcSideCart.registerRenderer = renderer.registerRenderer;
@@ -152,6 +224,7 @@ onReady(function() {
 		refreshCart: function() {
 			return storeApi.refreshCart().then(function(cart) {
 				cartState.updateCountFromCart(cart || {});
+				updateHooksContextFromCart(cart || {});
 				emit('side_cart_cart_fetched', { cart: cart });
 				return cart;
 			}).catch(function(err) {
@@ -162,6 +235,7 @@ onReady(function() {
 		updateItemQuantity: function(cartItemKey, quantity) {
 			return storeApi.updateItemQuantity(cartItemKey, quantity).then(function(cart) {
 				cartState.updateCountFromCart(cart || {});
+				updateHooksContextFromCart(cart || {});
 				emit('side_cart_cart_updated', { cart: cart });
 				return cart;
 			}).catch(function(err) {
@@ -172,6 +246,7 @@ onReady(function() {
 		removeItem: function(cartItemKey) {
 			return storeApi.removeItem(cartItemKey).then(function(cart) {
 				cartState.updateCountFromCart(cart || {});
+				updateHooksContextFromCart(cart || {});
 				emit('side_cart_cart_updated', { cart: cart });
 				return cart;
 			}).catch(function(err) {
@@ -182,6 +257,7 @@ onReady(function() {
 		applyCoupon: function(code) {
 			return storeApi.applyCoupon(code).then(function(cart) {
 				cartState.updateCountFromCart(cart || {});
+				updateHooksContextFromCart(cart || {});
 				emit('side_cart_cart_updated', { cart: cart });
 				return cart;
 			}).catch(function(err) {
@@ -192,6 +268,7 @@ onReady(function() {
 		removeCoupon: function(code) {
 			return storeApi.removeCoupon(code).then(function(cart) {
 				cartState.updateCountFromCart(cart || {});
+				updateHooksContextFromCart(cart || {});
 				emit('side_cart_cart_updated', { cart: cart });
 				return cart;
 			}).catch(function(err) {
@@ -221,6 +298,13 @@ onReady(function() {
 			a11y.close();
 		}
 	};
+
+	if (hydrationOnLoad !== 'never') {
+		var shouldHydrate = hydrationOnLoad === 'always' ? true : hasCartCookie();
+		if (shouldHydrate && wcSideCart.sdk && typeof wcSideCart.sdk.refreshCart === 'function') {
+			wcSideCart.sdk.refreshCart().catch(function() {});
+		}
+	}
 
 	if (mode !== 'headless' && !disableUiListeners) {
 		setupUiListeners({

@@ -107,6 +107,9 @@ Root keys (top-level):
   - `enabled`: `bool` (default `false`)
   - `param`: `string` (default `"wcsc_cb"`, max 64, `[a-zA-Z0-9_-]`)
   - `strategy`: `"timestamp"` (default) | `"random"`
+- `storeApi.hydration`
+  - `onLoad`: `"never"` (default) | `"ifCartCookie"` | `"always"`
+  - `updateHooksContext`: `bool` (default `true`)
 - `dom.selectors`: `object<string,string>` (override internal selectors)
   - allowed keys: `panel`, `backdrop`, `container`, `header`, `form`, `items`, `footer`, `totals`, `item`, `floatingIcon`, `emptyTemplate`, `toggle`, `remove`, `qtyInput`, `stepperDec`, `stepperInc`
 - `parity`
@@ -132,6 +135,30 @@ Root keys (top-level):
   - `enabled`: `bool` (default `true`)
   - `maxLength`: `int` clamped `0..50000` (default `5000`)
 - `hooksHtmlPolicy`: `"post"` (default) | `"strict"` | `"none"`
+
+## Full Page Cache (guest) support
+
+This plugin can be used with **full page cache** (including CDN edge cache) for **guest visitors**, with the important constraint that the **Store API cart endpoints must not be cached**.
+
+Key points:
+
+- Logged-in users: always bypass full page cache (recommended and expected for WooCommerce).
+- Store API cart: bypass/no-cache these routes:
+  - `/wp-json/wc/store/v1/cart*`
+- This plugin does not rely on WooCommerce “cart fragments”. It reads and mutates the cart via the WooCommerce Store API.
+- If your HTML is served from a shared cache, `hooksContext.cart.*` generated server-side may be stale. Enable hydration to keep the badge/count and client-side hooks context correct:
+
+```php
+<?php
+return array(
+	'storeApi' => array(
+		'hydration' => array(
+			'onLoad' => 'ifCartCookie',
+			'updateHooksContext' => true,
+		),
+	),
+);
+```
 
 ## UI flags (current behavior)
 

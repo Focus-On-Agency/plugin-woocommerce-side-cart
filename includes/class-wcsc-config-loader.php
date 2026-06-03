@@ -81,6 +81,10 @@ class WCSC_ConfigLoader {
 					'param' => 'wcsc_cb',
 					'strategy' => 'timestamp',
 				),
+				'hydration' => array(
+					'onLoad' => 'never',
+					'updateHooksContext' => true,
+				),
 			),
 			'dom' => array(
 				'selectors' => array(),
@@ -200,6 +204,14 @@ class WCSC_ConfigLoader {
 				}
 				if ( isset( $configFromFile['storeApi']['cacheBusting']['strategy'] ) ) {
 					$config['storeApi']['cacheBusting']['strategy'] = (string) $configFromFile['storeApi']['cacheBusting']['strategy'];
+				}
+			}
+			if ( isset( $configFromFile['storeApi']['hydration'] ) && is_array( $configFromFile['storeApi']['hydration'] ) ) {
+				if ( isset( $configFromFile['storeApi']['hydration']['onLoad'] ) ) {
+					$config['storeApi']['hydration']['onLoad'] = (string) $configFromFile['storeApi']['hydration']['onLoad'];
+				}
+				if ( isset( $configFromFile['storeApi']['hydration']['updateHooksContext'] ) ) {
+					$config['storeApi']['hydration']['updateHooksContext'] = (bool) $configFromFile['storeApi']['hydration']['updateHooksContext'];
 				}
 			}
 		}
@@ -361,6 +373,16 @@ class WCSC_ConfigLoader {
 			$strategy = (string) $defaults['storeApi']['cacheBusting']['strategy'];
 		}
 		$config['storeApi']['cacheBusting']['strategy'] = $strategy;
+
+		if ( ! isset( $config['storeApi']['hydration'] ) || ! is_array( $config['storeApi']['hydration'] ) ) {
+			$config['storeApi']['hydration'] = $defaults['storeApi']['hydration'];
+		}
+		$onLoad = isset( $config['storeApi']['hydration']['onLoad'] ) ? strtolower( trim( (string) $config['storeApi']['hydration']['onLoad'] ) ) : (string) $defaults['storeApi']['hydration']['onLoad'];
+		if ( ! in_array( $onLoad, array( 'never', 'ifcartcookie', 'always' ), true ) ) {
+			$onLoad = (string) $defaults['storeApi']['hydration']['onLoad'];
+		}
+		$config['storeApi']['hydration']['onLoad'] = $onLoad;
+		$config['storeApi']['hydration']['updateHooksContext'] = isset( $config['storeApi']['hydration']['updateHooksContext'] ) ? (bool) $config['storeApi']['hydration']['updateHooksContext'] : (bool) $defaults['storeApi']['hydration']['updateHooksContext'];
 
 		// Mode.
 		$mode = isset( $config['mode'] ) ? strtolower( trim( (string) $config['mode'] ) ) : $defaults['mode'];

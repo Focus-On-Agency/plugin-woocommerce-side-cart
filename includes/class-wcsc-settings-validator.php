@@ -132,6 +132,10 @@ class WCSC_SettingsValidator {
 				'param' => 'wcsc_cb',
 				'strategy' => 'timestamp',
 			),
+			'hydration' => array(
+				'onLoad' => 'never',
+				'updateHooksContext' => true,
+			),
 		);
 		$storeApi = $storeApiDefaults;
 		if ( isset( $config['storeApi'] ) && is_array( $config['storeApi'] ) && isset( $config['storeApi']['cacheBusting'] ) && is_array( $config['storeApi']['cacheBusting'] ) ) {
@@ -149,6 +153,17 @@ class WCSC_SettingsValidator {
 				if ( in_array( $strategy, array( 'timestamp', 'random' ), true ) ) {
 					$storeApi['cacheBusting']['strategy'] = $strategy;
 				}
+			}
+		}
+		if ( isset( $config['storeApi'] ) && is_array( $config['storeApi'] ) && isset( $config['storeApi']['hydration'] ) && is_array( $config['storeApi']['hydration'] ) ) {
+			if ( isset( $config['storeApi']['hydration']['onLoad'] ) ) {
+				$onLoad = strtolower( trim( (string) $config['storeApi']['hydration']['onLoad'] ) );
+				if ( in_array( $onLoad, array( 'never', 'ifcartcookie', 'always' ), true ) ) {
+					$storeApi['hydration']['onLoad'] = $onLoad;
+				}
+			}
+			if ( isset( $config['storeApi']['hydration']['updateHooksContext'] ) ) {
+				$storeApi['hydration']['updateHooksContext'] = (bool) $config['storeApi']['hydration']['updateHooksContext'];
 			}
 		}
 
