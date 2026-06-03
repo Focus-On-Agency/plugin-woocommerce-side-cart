@@ -119,6 +119,9 @@ Root keys (top-level):
 - `composite`
   - `groupMode`: `"flat"` (default) | `"noindent"` | `"parent"`
   - `showChildren`: `bool` (default `true`)
+  - `summary`
+    - `labelSource`: `component_title` (default) | `name`
+    - `separator`: `string` (default ` · `)
 - `ui`
   - visibility/rows: `showViewCartButton`, `showCheckoutButton`, `showItemRemove`, `showItemQuantity`, `enableQuantityEditing`, `showItemLinks`, `showItemPrice`, `showItemThumbnail`, `showSubtotal`, `showShipping`, `showTaxes`, `showTotal`, `showCoupons` (`bool`)
   - triggers/badge: `openTriggerElementId` (`string`), `badgeElementId` (`string`)
@@ -223,6 +226,8 @@ Supported values:
 
 - `labelSource`: `component_title` (default) | `name`
 - `separator`: string (default ` · `)
+
+You can also set the same values via config (`composite.summary.*`). If both config and filter are present, the filter runs last and can override the config.
 
 ## Styling (CSS Variables)
 

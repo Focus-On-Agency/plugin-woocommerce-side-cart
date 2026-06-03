@@ -96,6 +96,20 @@ class WCSC_SettingsValidator {
 			}
 		}
 		$summaryFormat = $compositeDefaults['summary'];
+		if ( isset( $config['composite'] ) && is_array( $config['composite'] ) && isset( $config['composite']['summary'] ) && is_array( $config['composite']['summary'] ) ) {
+			if ( isset( $config['composite']['summary']['labelSource'] ) ) {
+				$labelSourceFromConfig = strtolower( trim( (string) $config['composite']['summary']['labelSource'] ) );
+				if ( in_array( $labelSourceFromConfig, array( 'component_title', 'name' ), true ) ) {
+					$summaryFormat['labelSource'] = $labelSourceFromConfig;
+				}
+			}
+			if ( isset( $config['composite']['summary']['separator'] ) ) {
+				$separatorFromConfig = str_replace( "\0", '', (string) $config['composite']['summary']['separator'] );
+				if ( trim( $separatorFromConfig ) !== '' ) {
+					$summaryFormat['separator'] = $separatorFromConfig;
+				}
+			}
+		}
 		if ( function_exists( 'apply_filters' ) ) {
 			$summaryFormat = apply_filters(
 				'wc_side_cart_composite_summary_format',
@@ -173,6 +187,7 @@ class WCSC_SettingsValidator {
 			'showItemRemove' => true,
 			'showItemQuantity' => true,
 			'enableQuantityEditing' => true,
+			'showItemLinks' => true,
 			'showItemPrice' => true,
 			'showItemThumbnail' => true,
 			'showSubtotal' => true,
@@ -190,7 +205,7 @@ class WCSC_SettingsValidator {
 		);
 		$ui = $uiDefaults;
 		if ( isset( $config['ui'] ) && is_array( $config['ui'] ) ) {
-			foreach ( array( 'showViewCartButton', 'showCheckoutButton', 'showItemRemove', 'showItemQuantity', 'enableQuantityEditing', 'showItemPrice', 'showItemThumbnail', 'showSubtotal', 'showShipping', 'showTaxes', 'showTotal', 'showCoupons', 'showFloatingCartIcon', 'lockPageScroll', 'hideCountWhenZero', 'autoOpenOnAddToCart', 'disableUiListeners' ) as $flag ) {
+			foreach ( array( 'showViewCartButton', 'showCheckoutButton', 'showItemRemove', 'showItemQuantity', 'enableQuantityEditing', 'showItemLinks', 'showItemPrice', 'showItemThumbnail', 'showSubtotal', 'showShipping', 'showTaxes', 'showTotal', 'showCoupons', 'showFloatingCartIcon', 'lockPageScroll', 'hideCountWhenZero', 'autoOpenOnAddToCart', 'disableUiListeners' ) as $flag ) {
 				if ( isset( $config['ui'][ $flag ] ) ) {
 					$ui[ $flag ] = (bool) $config['ui'][ $flag ];
 				}

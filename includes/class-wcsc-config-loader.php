@@ -97,6 +97,10 @@ class WCSC_ConfigLoader {
 			'composite' => array(
 				'groupMode' => 'flat',
 				'showChildren' => true,
+				'summary' => array(
+					'labelSource' => 'component_title',
+					'separator' => ' · ',
+				),
 			),
 			'ui' => array(
 				'showViewCartButton' => true,
@@ -118,6 +122,7 @@ class WCSC_ConfigLoader {
 				'openTriggerElementId' => '',
 				'badgeElementId' => '',
 				'autoOpenOnAddToCart' => false,
+				'disableUiListeners' => false,
 			),
 			'cssVars' => array(),
 			'cssClasses' => array(),
@@ -235,6 +240,14 @@ class WCSC_ConfigLoader {
 			if ( isset( $configFromFile['composite']['showChildren'] ) ) {
 				$config['composite']['showChildren'] = (bool) $configFromFile['composite']['showChildren'];
 			}
+			if ( isset( $configFromFile['composite']['summary'] ) && is_array( $configFromFile['composite']['summary'] ) ) {
+				if ( isset( $configFromFile['composite']['summary']['labelSource'] ) ) {
+					$config['composite']['summary']['labelSource'] = (string) $configFromFile['composite']['summary']['labelSource'];
+				}
+				if ( isset( $configFromFile['composite']['summary']['separator'] ) ) {
+					$config['composite']['summary']['separator'] = (string) $configFromFile['composite']['summary']['separator'];
+				}
+			}
 		}
 
 		if ( isset( $configFromFile['ui'] ) && is_array( $configFromFile['ui'] ) ) {
@@ -246,7 +259,7 @@ class WCSC_ConfigLoader {
 					$config['ui'][ $flag ] = (bool) $configFromFile['ui'][ $flag ];
 				}
 			}
-			foreach ( array( 'lockPageScroll', 'hideCountWhenZero' ) as $flag ) {
+			foreach ( array( 'lockPageScroll', 'hideCountWhenZero', 'disableUiListeners' ) as $flag ) {
 				if ( isset( $configFromFile['ui'][ $flag ] ) ) {
 					$config['ui'][ $flag ] = (bool) $configFromFile['ui'][ $flag ];
 				}
@@ -420,11 +433,28 @@ class WCSC_ConfigLoader {
 		$config['composite']['groupMode'] = $groupMode;
 		$config['composite']['showChildren'] = isset( $config['composite']['showChildren'] ) ? (bool) $config['composite']['showChildren'] : (bool) $defaults['composite']['showChildren'];
 
+		if ( ! isset( $config['composite']['summary'] ) || ! is_array( $config['composite']['summary'] ) ) {
+			$config['composite']['summary'] = $defaults['composite']['summary'];
+		}
+		$labelSource = isset( $config['composite']['summary']['labelSource'] ) ? strtolower( trim( (string) $config['composite']['summary']['labelSource'] ) ) : (string) $defaults['composite']['summary']['labelSource'];
+		if ( ! in_array( $labelSource, array( 'component_title', 'name' ), true ) ) {
+			$labelSource = (string) $defaults['composite']['summary']['labelSource'];
+		}
+		$separator = isset( $config['composite']['summary']['separator'] ) ? (string) $config['composite']['summary']['separator'] : (string) $defaults['composite']['summary']['separator'];
+		$separator = str_replace( "\0", '', $separator );
+		if ( trim( $separator ) === '' ) {
+			$separator = (string) $defaults['composite']['summary']['separator'];
+		}
+		$config['composite']['summary'] = array(
+			'labelSource' => $labelSource,
+			'separator' => $separator,
+		);
+
 		// UI.
 		if ( ! isset( $config['ui'] ) || ! is_array( $config['ui'] ) ) {
 			$config['ui'] = $defaults['ui'];
 		}
-		foreach ( array( 'showViewCartButton', 'showCheckoutButton', 'showItemRemove', 'showItemQuantity', 'enableQuantityEditing', 'showItemLinks', 'showItemPrice', 'showItemThumbnail', 'showSubtotal', 'showShipping', 'showTaxes', 'showTotal', 'showCoupons', 'showFloatingCartIcon', 'lockPageScroll', 'hideCountWhenZero', 'autoOpenOnAddToCart' ) as $flag ) {
+		foreach ( array( 'showViewCartButton', 'showCheckoutButton', 'showItemRemove', 'showItemQuantity', 'enableQuantityEditing', 'showItemLinks', 'showItemPrice', 'showItemThumbnail', 'showSubtotal', 'showShipping', 'showTaxes', 'showTotal', 'showCoupons', 'showFloatingCartIcon', 'lockPageScroll', 'hideCountWhenZero', 'autoOpenOnAddToCart', 'disableUiListeners' ) as $flag ) {
 			$config['ui'][ $flag ] = isset( $config['ui'][ $flag ] ) ? (bool) $config['ui'][ $flag ] : (bool) $defaults['ui'][ $flag ];
 		}
 		foreach ( array( 'openTriggerElementId', 'badgeElementId' ) as $field ) {
