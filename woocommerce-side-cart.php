@@ -2,7 +2,7 @@
 /*
 * Plugin Name: WooCommerce Side Cart
 * Description: Lightweight side cart drawer powered by WooCommerce (Store API). Toggle via icon/menu link or a custom trigger element.
-* Version: 3.2.2
+* Version: 3.2.3
 * Author: Focus On
 * Author URI: https://focuson.agency
 *
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WCSC_VERSION', '3.2.2' );
+define( 'WCSC_VERSION', '3.2.3' );
 define( 'WCSC_PLUGIN_FILE', __FILE__ );
 define( 'WCSC_PLUGIN_DIR', untrailingslashit( plugin_dir_path( __FILE__ ) ) );
 

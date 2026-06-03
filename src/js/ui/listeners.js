@@ -370,7 +370,12 @@ export function setupUiListeners(options) {
 		var $body = window.jQuery(document.body);
 		if ($body && $body.on) {
 			$body.on('added_to_cart', function(event, fragments, cartHash, $button) {
-				var buttonEl = $button && $button[0] ? $button[0] : null;
+				var buttonEl = null;
+				if ($button && $button[0]) {
+					buttonEl = $button[0];
+				} else if ($button && $button.nodeType === 1) {
+					buttonEl = $button;
+				}
 				var shouldAutoOpen = autoOpenOnAddToCart && !!(buttonEl && buttonEl.matches && buttonEl.matches('a.add_to_cart_button.ajax_add_to_cart, button.single_add_to_cart_button'));
 				refreshFromExternalCartChange({ shouldAutoOpen: shouldAutoOpen });
 			});

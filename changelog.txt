@@ -9,5 +9,8 @@
 2026.06.03 - version 3.2.2
  * Fix: autoOpenOnAddToCart now supports WooCommerce single product AJAX (button.single_add_to_cart_button) via added_to_cart event.
 
+2026.06.03 - version 3.2.3
+ * Fix: autoOpenOnAddToCart now supports added_to_cart payloads that pass a DOM element as $button (not only jQuery objects).
+
 2015.04.22 - version 1.0.0
  * Initial Release.
