@@ -1,7 +1,7 @@
 {
 	"name": "woocommerce-side-cart",
 	"private": true,
-	"version": "3.2.1",
+	"version": "3.2.2",
 	"scripts": {
 		"build": "esbuild src/js/index.js --bundle --format=iife --target=es5 --outfile=assets/js/woocommerce_side_cart.js && esbuild src/js/index.js --bundle --format=iife --target=es5 --minify --legal-comments=none --outfile=assets/js/woocommerce_side_cart.min.js",
 		"lint:js": "eslint src/js --ext .js",
