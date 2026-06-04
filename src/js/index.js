@@ -307,7 +307,7 @@ onReady(function() {
 	}
 
 	if (mode !== 'headless' && !disableUiListeners) {
-		setupUiListeners({
+		var listenersOptions = {
 			wcSideCart: wcSideCart,
 			getSelector: getSelector,
 			emit: emit,
@@ -320,7 +320,38 @@ onReady(function() {
 			openSideCart: a11y.open,
 			openSideCartWithCart: a11y.openWithCart,
 			closeSideCart: a11y.close
-		});
+		};
+
+		if (autoOpenOnAddToCart || onCartClickBehaviour !== 'open_drawer') {
+			setupUiListeners(listenersOptions);
+		} else {
+			var uiListenersDidBind = false;
+			var bootstrapClickHandler = function(e) {
+				if (uiListenersDidBind) {
+					return;
+				}
+
+				var toggleSel = getSelector('toggle');
+				var toggleEl = (toggleSel && e.target && e.target.closest) ? e.target.closest(toggleSel) : null;
+
+				var openTriggerEl = openTriggerElementId ? document.getElementById(openTriggerElementId) : null;
+				var isCustomTrigger = openTriggerEl && (e.target === openTriggerEl || (openTriggerEl.contains && openTriggerEl.contains(e.target)));
+
+				if (!toggleEl && !isCustomTrigger) {
+					return;
+				}
+
+				uiListenersDidBind = true;
+				document.removeEventListener('click', bootstrapClickHandler, true);
+				setupUiListeners(listenersOptions);
+
+				e.preventDefault();
+				e.stopPropagation();
+				a11y.open();
+			};
+
+			document.addEventListener('click', bootstrapClickHandler, true);
+		}
 	}
 
 	// Keep legacy behavior: if the markup starts already opened, refresh + render.

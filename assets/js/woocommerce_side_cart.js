@@ -2755,7 +2755,8 @@
     var stepperSel = [getSelector("stepperDec"), getSelector("stepperInc")].filter(Boolean).join(", ");
     var removeSel = getSelector("remove");
     var backdropSel = getSelector("backdrop");
-    var panelEl = qs(getSelector("panel"));
+    var panelEl = null;
+    var panelHandlersBound = false;
     function handleQtyInput(e) {
       var target = e.target;
       if (!qtySel || !target || !target.matches(qtySel)) {
@@ -2777,7 +2778,6 @@
         performQuantityUpdate(target, cartItemKey, quantity);
       }, 600));
     }
-    (panelEl || document).addEventListener("input", handleQtyInput);
     function handlePanelClick(e) {
       var toggle = toggleSel && e.target && e.target.closest ? e.target.closest(toggleSel) : null;
       if (toggle) {
@@ -2836,8 +2836,34 @@
         return;
       }
     }
-    if (panelEl) {
+    function handleEscapeKeydown(e) {
+      if (e.key !== "Escape") {
+        return;
+      }
+      if (!document.body.classList.contains("wc-side-cart-is-open")) {
+        return;
+      }
+      e.preventDefault();
+      closeSideCart();
+    }
+    function bindPanelHandlers() {
+      if (panelHandlersBound) {
+        return;
+      }
+      panelEl = qs(getSelector("panel"));
+      if (!panelEl) {
+        return;
+      }
+      panelHandlersBound = true;
       panelEl.addEventListener("click", handlePanelClick);
+      panelEl.addEventListener("input", handleQtyInput);
+      document.addEventListener("keydown", handleEscapeKeydown);
+    }
+    document.body.addEventListener("side_cart_open", function() {
+      bindPanelHandlers();
+    });
+    if (document.body.classList.contains("wc-side-cart-is-open")) {
+      bindPanelHandlers();
     }
     document.addEventListener("click", function(e) {
       if (panelEl && e.target && panelEl.contains(e.target)) {
@@ -2896,16 +2922,6 @@
     }
     document.body.addEventListener("wc-blocks_removed_from_cart", function() {
       refreshFromExternalCartChange({ shouldAutoOpen: false });
-    });
-    document.addEventListener("keydown", function(e) {
-      if (e.key !== "Escape") {
-        return;
-      }
-      if (!document.body.classList.contains("wc-side-cart-is-open")) {
-        return;
-      }
-      e.preventDefault();
-      closeSideCart();
     });
   }
 
@@ -3171,7 +3187,7 @@
       }
     }
     if (mode !== "headless" && !disableUiListeners) {
-      setupUiListeners({
+      var listenersOptions = {
         wcSideCart: wcSideCart,
         getSelector: getSelector,
         emit: emit,
@@ -3184,7 +3200,31 @@
         openSideCart: a11y.open,
         openSideCartWithCart: a11y.openWithCart,
         closeSideCart: a11y.close
-      });
+      };
+      if (autoOpenOnAddToCart || onCartClickBehaviour !== "open_drawer") {
+        setupUiListeners(listenersOptions);
+      } else {
+        var uiListenersDidBind = false;
+        var bootstrapClickHandler = function(e) {
+          if (uiListenersDidBind) {
+            return;
+          }
+          var toggleSel = getSelector("toggle");
+          var toggleEl = toggleSel && e.target && e.target.closest ? e.target.closest(toggleSel) : null;
+          var openTriggerEl = openTriggerElementId ? document.getElementById(openTriggerElementId) : null;
+          var isCustomTrigger = openTriggerEl && (e.target === openTriggerEl || openTriggerEl.contains && openTriggerEl.contains(e.target));
+          if (!toggleEl && !isCustomTrigger) {
+            return;
+          }
+          uiListenersDidBind = true;
+          document.removeEventListener("click", bootstrapClickHandler, true);
+          setupUiListeners(listenersOptions);
+          e.preventDefault();
+          e.stopPropagation();
+          a11y.open();
+        };
+        document.addEventListener("click", bootstrapClickHandler, true);
+      }
     }
     if (document.body.classList.contains("wc-side-cart-is-open") && mode !== "headless") {
       storeApi.refreshCart().then(function(cart) {

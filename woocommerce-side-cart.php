@@ -2,7 +2,7 @@
 /*
 * Plugin Name: WooCommerce Side Cart
 * Description: Lightweight side cart drawer powered by WooCommerce (Store API). Toggle via icon/menu link or a custom trigger element.
-* Version: 3.2.5
+* Version: 3.3.0
 * Author: Focus On
 * Author URI: https://focuson.agency
 *
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WCSC_VERSION', '3.2.5' );
+define( 'WCSC_VERSION', '3.3.0' );
 define( 'WCSC_PLUGIN_FILE', __FILE__ );
 define( 'WCSC_PLUGIN_DIR', untrailingslashit( plugin_dir_path( __FILE__ ) ) );
 
@@ -93,6 +93,14 @@ class WC_Side_Cart {
 		$this->hooksHtmlSanitizer = new WCSC_HooksHtmlSanitizer();
 		$settingsValidator = new WCSC_SettingsValidator( $this->hooksHtmlSanitizer );
 		$this->payloadBuilder = new WCSC_PayloadBuilder( $settingsValidator, $this->hooksHtmlSanitizer );
+
+		if ( $this->is_hard_disabled_request() ) {
+			return;
+		}
+
+		if ( ! $this->should_display_side_cart() ) {
+			return;
+		}
 
 		add_filter( 'rest_post_dispatch', array( $this, 'filter_store_api_cart_no_cache_headers' ), 10, 3 );
 		
@@ -305,7 +313,7 @@ class WC_Side_Cart {
 		return $classes;
 	}
 
-	private function get_cart_checkout_gating_mode() {
+	private function get_cart_gating_mode() {
 		$config = $this->get_config();
 		$parity = ( isset( $config['parity'] ) && is_array( $config['parity'] ) ) ? $config['parity'] : array();
 		$mode = isset( $parity['cartCheckoutGating'] ) ? strtolower( trim( (string) $parity['cartCheckoutGating'] ) ) : 'removed';
@@ -316,23 +324,31 @@ class WC_Side_Cart {
 	}
 
 	private function get_side_cart_visibility() {
+		if ( is_checkout() ) {
+			return 'removed';
+		}
+
 		if ( is_cart() ) {
 			$enabled = (bool) apply_filters( 'wc_side_cart_display_on_cart', false );
 			if ( $enabled ) {
 				return 'normal';
 			}
-			return $this->get_cart_checkout_gating_mode();
-		}
-
-		if ( is_checkout() ) {
-			$enabled = (bool) apply_filters( 'wc_side_cart_display_on_checkout', false );
-			if ( $enabled ) {
-				return 'normal';
-			}
-			return $this->get_cart_checkout_gating_mode();
+			return $this->get_cart_gating_mode();
 		}
 
 		return 'normal';
+	}
+
+	private function is_hard_disabled_request() {
+		if ( is_admin() ) {
+			return false;
+		}
+
+		if ( is_checkout() ) {
+			return true;
+		}
+
+		return false;
 	}
 
 	private function get_config() {

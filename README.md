@@ -9,6 +9,7 @@ The UI rendering is mainly **client-side**: the server markup is a stable contai
 - Drawer overlay, backdrop, and scroll lock
 - Cart updates via Store API (`/wp-json/wc/store/v1/cart/...`)
 - Quantity editing with stepper (optional) and item removal
+- Hard-disabled on Checkout (no assets / no markup)
 - Minimal/editorial UI driven by **CSS variables** (tokens `--wcsc-*`)
 - Extensible via:
   - extra classes via config (`cssClasses`)
@@ -113,7 +114,7 @@ Root keys (top-level):
 - `dom.selectors`: `object<string,string>` (override internal selectors)
   - allowed keys: `panel`, `backdrop`, `container`, `header`, `form`, `items`, `footer`, `totals`, `item`, `floatingIcon`, `emptyTemplate`, `toggle`, `remove`, `qtyInput`, `stepperDec`, `stepperInc`
 - `parity`
-  - `cartCheckoutGating`: `"removed"` (default) | `"hidden"`
+  - `cartCheckoutGating`: `"removed"` (default) | `"hidden"` (applies to the Cart page; Checkout is always forced to `removed`)
   - `onCartClickBehaviour`: `"open_drawer"` (default) | `"navigate_to_checkout"` | `"navigate_to_cart"` | `"navigate_to_url"`
   - `blocksSyncDebug`: `bool` (default `false`)
 - `composite`

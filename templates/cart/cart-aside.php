@@ -12,8 +12,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
 
-global $wc_side_cart; 
-
 do_action( 'wc_side_cart_before' );
 
 $config = ( isset( $side_cart_config ) && is_array( $side_cart_config ) ) ? $side_cart_config : array();
@@ -46,8 +44,12 @@ if ( $has_svg ) {
 $side_cart_visibility = isset( $side_cart_visibility ) ? (string) $side_cart_visibility : 'normal';
 $is_hidden = ( $side_cart_visibility === 'hidden' );
 
-$is_empty = WC()->cart->is_empty();
-$count = absint( apply_filters( 'wc_side_cart_contents_count', WC()->cart->cart_contents_count ) );
+$count = 0;
+if ( isset( $_COOKIE['woocommerce_items_in_cart'] ) ) {
+	$count = absint( $_COOKIE['woocommerce_items_in_cart'] );
+}
+$count = absint( apply_filters( 'wc_side_cart_contents_count', $count ) );
+$is_empty = ( $count === 0 );
 
 ?>
 
@@ -84,12 +86,10 @@ $count = absint( apply_filters( 'wc_side_cart_contents_count', WC()->cart->cart_
     	</div>
     	
     	<form action="<?php echo esc_url( wc_get_cart_url() ); ?>" method="post" class="js-side-cart-form side-cart__form">
-			<?php wc_get_template( 'cart/cart-aside-items.php', array(), false, $wc_side_cart->templates_path() ); ?>
+			<div class="side-cart__items js-side-cart-items"></div>
 
 			<div class="side-cart__footer" <?php echo $is_empty ? 'hidden' : ''; ?>>
-			
-				<?php wc_get_template( 'cart/cart-aside-totals.php', array(), false, $wc_side_cart->templates_path() ); ?>
-				
+				<div class="side-cart__totals"></div>
 				<?php wp_nonce_field( 'woocommerce-cart' ); ?>
 				
 			</div>

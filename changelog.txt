@@ -1,5 +1,11 @@
 *** WooCommerce Side Cart ***
 
+2026.06.04 - version 3.3.0
+ * Performance: hard-disable on Checkout (no hooks, no assets, no markup).
+ * Performance: server-side footer markup is now minimal; items/totals render client-side only.
+ * Performance: UI listeners bind on-demand (first interaction / first open).
+ * Build: ships minified JS bundle.
+
 2026.06.03 - version 3.2.0
  * Full Page Cache (guest): optional hydration on load via Store API to keep badge/count + hooksContext.cart in sync.
 

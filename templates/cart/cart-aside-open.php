@@ -96,7 +96,12 @@ if ( isset( $config['parity'] ) && is_array( $config['parity'] ) && isset( $conf
 		<span class="side-cart__icon_svg" aria-hidden="true"><?php echo $svg; ?></span>
 	<?php endif; ?>
 
-	<?php $count = absint( WC()->cart->cart_contents_count ); ?>
+	<?php
+	$count = 0;
+	if ( isset( $_COOKIE['woocommerce_items_in_cart'] ) ) {
+		$count = absint( $_COOKIE['woocommerce_items_in_cart'] );
+	}
+	?>
 	<span class="side-cart__number js-side-cart-number" <?php echo ( $hide_count_when_zero && $count === 0 ) ? 'hidden="hidden"' : ''; ?>>
 		<?php echo esc_html( $count ); ?>
 	</span>
