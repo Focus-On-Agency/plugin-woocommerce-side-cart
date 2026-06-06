@@ -1,5 +1,8 @@
 *** WooCommerce Side Cart ***
 
+2026.06.06 - version 3.3.1
+ * Fix: removing the last cart item no longer restores stale items after refresh (Store API cart token handling).
+
 2026.06.04 - version 3.3.0
  * Performance: hard-disable on Checkout (no hooks, no assets, no markup).
  * Performance: server-side footer markup is now minimal; items/totals render client-side only.

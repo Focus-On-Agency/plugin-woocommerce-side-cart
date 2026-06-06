@@ -673,20 +673,7 @@
       if (refreshCartPromise) {
         return refreshCartPromise;
       }
-      var hadCartToken = !!(cartState && cartState.getCartToken());
       refreshCartPromise = request(wcSideCart.endpoints.cart, "GET").then(function(cart) {
-        var items = cart && cart.items ? cart.items : [];
-        if (hadCartToken && Array.isArray(items) && items.length === 0) {
-          return request(wcSideCart.endpoints.cart, "GET", void 0, void 0, { omitCartToken: true }).then(function(fallbackCart) {
-            var fallbackItems = fallbackCart && fallbackCart.items ? fallbackCart.items : [];
-            if (Array.isArray(fallbackItems) && fallbackItems.length) {
-              return fallbackCart;
-            }
-            return cart;
-          }).catch(function() {
-            return cart;
-          });
-        }
         return cart;
       }).catch(function(err) {
         if (cartState) {

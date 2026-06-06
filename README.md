@@ -4,6 +4,12 @@ WooCommerce plugin that adds a **drawer-style side cart** (overlay + backdrop) w
 
 The UI rendering is mainly **client-side**: the server markup is a stable container, while items/totals/coupons are (re)built by the JS renderer based on the cart payload.
 
+## Changelog
+
+See [changelog.txt](./changelog.txt).
+
+- 3.3.1: Fix cart refresh after removing the last item (prevents restoring stale items after the cart becomes empty).
+
 ## Features
 
 - Drawer overlay, backdrop, and scroll lock
