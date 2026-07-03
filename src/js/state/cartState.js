@@ -15,6 +15,16 @@ export function createCartState(options) {
 	var storeApiNonceStorageKey = 'wcSideCartStoreApiNonce';
 	var cartTokenStorageKey = 'wcSideCartCartToken';
 	var wooCartHashStorageKey = 'wcSideCartWooCartHash';
+	var authStateStorageKey = 'wcSideCartAuthState';
+
+	function debugLog(label, data) {
+		try {
+			if (typeof window === 'undefined' || !window.console || !window.console.log) {
+				return;
+			}
+			window.console.log('[wcsc-debug][cartState] ' + label, data || {});
+		} catch (e) {}
+	}
 
 	function getCookieValue(name) {
 		try {
@@ -49,6 +59,10 @@ export function createCartState(options) {
 		return getCookieValue('woocommerce_cart_hash') || '';
 	}
 
+	function getAuthState() {
+		return wcSideCart && wcSideCart.auth && wcSideCart.auth.isUserLoggedIn ? 'logged-in' : 'guest';
+	}
+
 	function getSessionValue(key) {
 		try {
 			if (!window.sessionStorage) {
@@ -79,15 +93,43 @@ export function createCartState(options) {
 		}
 		var currentWooCartHash = getWooCartHash();
 		var storedWooCartHash = getSessionValue(wooCartHashStorageKey);
+		var currentAuthState = getAuthState();
+		var storedAuthState = getSessionValue(authStateStorageKey);
+		debugLog('initFromSession:start', {
+			currentAuthState: currentAuthState,
+			storedAuthState: storedAuthState || '',
+			currentWooCartHash: currentWooCartHash || '',
+			storedWooCartHash: storedWooCartHash || '',
+			localizedNoncePresent: !!(wcSideCart && wcSideCart.storeApiNonce),
+			localizedCartTokenPresent: !!(wcSideCart && wcSideCart.cartToken),
+			storedNoncePresent: !!getSessionValue(storeApiNonceStorageKey),
+			storedCartTokenPresent: !!getSessionValue(cartTokenStorageKey)
+		});
+		if (storedAuthState && storedAuthState !== currentAuthState) {
+			wcSideCart.storeApiNonce = '';
+			wcSideCart.cartToken = '';
+			setSessionValue(storeApiNonceStorageKey, '');
+			setSessionValue(cartTokenStorageKey, '');
+			setSessionValue(wooCartHashStorageKey, currentWooCartHash);
+			debugLog('initFromSession:authStateChanged', {
+				storedAuthState: storedAuthState,
+				currentAuthState: currentAuthState
+			});
+		}
+		setSessionValue(authStateStorageKey, currentAuthState);
 		if (storedWooCartHash && currentWooCartHash && storedWooCartHash !== currentWooCartHash) {
 			wcSideCart.cartToken = '';
 			setSessionValue(storeApiNonceStorageKey, '');
 			setSessionValue(cartTokenStorageKey, '');
 			setSessionValue(wooCartHashStorageKey, currentWooCartHash);
+			debugLog('initFromSession:wooCartHashChanged', {
+				storedWooCartHash: storedWooCartHash,
+				currentWooCartHash: currentWooCartHash
+			});
 			return;
 		}
 		var storedNonce = getSessionValue(storeApiNonceStorageKey);
-		if (storedNonce) {
+		if (storedNonce && currentAuthState !== 'logged-in') {
 			wcSideCart.storeApiNonce = storedNonce;
 		}
 
@@ -98,6 +140,14 @@ export function createCartState(options) {
 		if (currentWooCartHash && !storedWooCartHash) {
 			setSessionValue(wooCartHashStorageKey, currentWooCartHash);
 		}
+		debugLog('initFromSession:end', {
+			activeAuthState: currentAuthState,
+			activeWooCartHash: getWooCartHash() || '',
+			activeNoncePresent: !!(wcSideCart && wcSideCart.storeApiNonce),
+			activeCartTokenPresent: !!(wcSideCart && wcSideCart.cartToken),
+			nonceSource: (storedNonce && currentAuthState !== 'logged-in') ? 'session' : 'localized-or-empty',
+			cartTokenSource: storedCartToken ? 'session' : 'localized-or-empty'
+		});
 	}
 
 	function updateFromResponseHeaders(headers) {
@@ -120,6 +170,13 @@ export function createCartState(options) {
 		if (currentWooCartHash) {
 			setSessionValue(wooCartHashStorageKey, currentWooCartHash);
 		}
+		setSessionValue(authStateStorageKey, getAuthState());
+		debugLog('updateFromResponseHeaders', {
+			refreshedNoncePresent: !!refreshedNonce,
+			refreshedCartTokenPresent: !!refreshedCartToken,
+			currentWooCartHash: currentWooCartHash || '',
+			currentAuthState: getAuthState()
+		});
 	}
 
 	function clearTokens() {
@@ -130,6 +187,10 @@ export function createCartState(options) {
 		wcSideCart.cartToken = '';
 		setSessionValue(storeApiNonceStorageKey, '');
 		setSessionValue(cartTokenStorageKey, '');
+		debugLog('clearTokens', {
+			currentWooCartHash: getWooCartHash() || '',
+			currentAuthState: getAuthState()
+		});
 	}
 
 	function updateCountFromCart(cart) {

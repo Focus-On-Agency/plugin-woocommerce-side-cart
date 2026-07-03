@@ -318,6 +318,16 @@ export function createStoreApiClient(options) {
 		return appendQueryParam(url, settings.param, value);
 	}
 
+	function debugLog(label, data, method) {
+		try {
+			if (typeof window === 'undefined' || !window.console || !window.console.log) {
+				return;
+			}
+			var logMethod = (method && typeof window.console[method] === 'function') ? method : 'log';
+			window.console[logMethod]('[wcsc-debug][storeApi] ' + label, data || {});
+		} catch (e) {}
+	}
+
 	function request(url, method, body, signal, options) {
 		var headers = {};
 
@@ -338,6 +348,14 @@ export function createStoreApiClient(options) {
 		}
 
 		var finalUrl = maybeApplyCartCacheBusting(url, method);
+		debugLog('request:dispatch', {
+			method: method,
+			url: finalUrl,
+			hasNonce: !!nonce,
+			hasCartToken: !!(cartToken && !omitCartToken),
+			omitCartToken: omitCartToken,
+			body: body || null
+		});
 		return window.fetch(finalUrl, {
 			method: method,
 			cache: 'no-store',
@@ -362,6 +380,14 @@ export function createStoreApiClient(options) {
 			if (cartState) {
 				cartState.updateFromResponseHeaders(response.headers);
 			}
+			debugLog('request:response', {
+				method: method,
+				url: finalUrl,
+				status: response.status,
+				ok: response.ok,
+				responseNoncePresent: !!(response.headers.get('Nonce') || response.headers.get('X-WC-Store-API-Nonce')),
+				responseCartTokenPresent: !!response.headers.get('Cart-Token')
+			});
 			if (!response.ok) {
 				return response.text().then(function(text) {
 					var raw = text ? String(text) : '';
@@ -373,6 +399,14 @@ export function createStoreApiClient(options) {
 					}
 
 					var msg = (data && data.message) ? decodeHtmlEntities(data.message) : (raw ? decodeHtmlEntities(raw) : ('Store API request failed: ' + response.status));
+					debugLog('request:error', {
+						method: method,
+						url: finalUrl,
+						status: response.status,
+						code: data && data.code ? String(data.code) : '',
+						message: msg,
+						response: data || raw || null
+					}, 'warn');
 					var error = new Error(msg);
 					error.status = response.status;
 					error.code = data && data.code ? String(data.code) : '';
@@ -390,15 +424,31 @@ export function createStoreApiClient(options) {
 			return Promise.reject(new Error('Missing cart endpoint'));
 		}
 		if (refreshCartPromise) {
+			debugLog('refreshCart:reusePromise', {
+				url: wcSideCart.endpoints.cart
+			});
 			return refreshCartPromise;
 		}
 
+		debugLog('refreshCart:start', {
+			url: wcSideCart.endpoints.cart
+		});
 		refreshCartPromise = request(wcSideCart.endpoints.cart, 'GET').then(function(cart) {
+			debugLog('refreshCart:success', {
+				itemsCount: cart && cart.items && cart.items.length ? cart.items.length : 0
+			});
 			return cart;
 		}).catch(function(err) {
+			debugLog('refreshCart:firstAttemptFailed', {
+				message: err && err.message ? String(err.message) : '',
+				status: err && err.status ? err.status : ''
+			}, 'warn');
 			if (cartState) {
 				cartState.clearTokens();
 			}
+			debugLog('refreshCart:retryAfterClearTokens', {
+				url: wcSideCart.endpoints.cart
+			});
 			return request(wcSideCart.endpoints.cart, 'GET').catch(function() {
 				throw err;
 			});
@@ -415,6 +465,9 @@ export function createStoreApiClient(options) {
 
 	function ensureCartToken() {
 		var token = cartState ? cartState.getCartToken() : '';
+		debugLog('ensureCartToken', {
+			hasToken: !!token
+		});
 		if (token) {
 			return Promise.resolve(token);
 		}
@@ -452,6 +505,9 @@ export function createStoreApiClient(options) {
 		if (!wcSideCart || !wcSideCart.endpoints || !wcSideCart.endpoints.cartRemoveItem) {
 			return Promise.reject(new Error('Missing remove item endpoint'));
 		}
+		debugLog('removeItem:start', {
+			cartItemKey: cartItemKey
+		});
 		return ensureCartToken().then(function() {
 			if (removeItemAbort) {
 				removeItemAbort.abort();
@@ -461,6 +517,10 @@ export function createStoreApiClient(options) {
 				key: cartItemKey
 			}, removeItemAbort ? removeItemAbort.signal : undefined);
 		}).then(function(cart) {
+			debugLog('removeItem:success', {
+				cartItemKey: cartItemKey,
+				itemsCount: cart && cart.items && cart.items.length ? cart.items.length : 0
+			});
 			return syncBlocksAfterMutation({
 				mutation: 'removeItem',
 				cartItemKey: cartItemKey,

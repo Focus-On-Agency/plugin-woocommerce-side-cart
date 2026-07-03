@@ -8,6 +8,7 @@ The UI rendering is mainly **client-side**: the server markup is a stable contai
 
 See [changelog.txt](./changelog.txt).
 
+- 3.3.2: Temporary debug build with console tracing for Store API cart token / add-to-cart sync, plus auth-aware client state handling.
 - 3.3.1: Fix cart refresh after removing the last item (prevents restoring stale items after the cart becomes empty).
 
 ## Features

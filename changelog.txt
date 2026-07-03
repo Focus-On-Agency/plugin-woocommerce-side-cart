@@ -1,5 +1,9 @@
 *** WooCommerce Side Cart ***
 
+2026.07.03 - version 3.3.2
+ * Debug: add temporary console logging to trace Store API cart token, cart hash, remove-item and external add-to-cart sync flows.
+ * Fix: preserve safer auth-aware client state handling for Store API nonce/bootstrap.
+
 2026.06.06 - version 3.3.1
  * Fix: removing the last cart item no longer restores stale items after refresh (Store API cart token handling).
 

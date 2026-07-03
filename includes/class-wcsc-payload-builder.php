@@ -81,6 +81,9 @@ class WCSC_PayloadBuilder {
 			'nonces' => array(
 				'cart' => wp_create_nonce( 'woocommerce-cart' ),
 			),
+			'auth' => array(
+				'isUserLoggedIn' => is_user_logged_in(),
+			),
 			'settings' => $settings,
 			'i18n' => array(
 				'emptyCart' => __( 'Your cart is currently empty.', 'woocommerce' ),
