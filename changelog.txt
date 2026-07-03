@@ -1,5 +1,9 @@
 *** WooCommerce Side Cart ***
 
+2026.07.03 - version 3.3.4
+ * Cleanup: remove temporary console debug tracing used to diagnose the side-cart remove/add-to-cart synchronization issue.
+ * Fix: keep the session-first cart synchronization introduced in 3.3.3 for remove-item, quantity updates and external add-to-cart refreshes.
+
 2026.07.03 - version 3.3.3
  * Fix: prefer the WooCommerce session/nonce over persisted Cart-Token during side-cart remove/update and after external add-to-cart events.
  * Fix: ignore internal block cart sync events emitted by the plugin itself to avoid duplicate refresh/open flows after remove-item mutations.

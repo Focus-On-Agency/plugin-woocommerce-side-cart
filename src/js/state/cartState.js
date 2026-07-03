@@ -17,15 +17,6 @@ export function createCartState(options) {
 	var wooCartHashStorageKey = 'wcSideCartWooCartHash';
 	var authStateStorageKey = 'wcSideCartAuthState';
 
-	function debugLog(label, data) {
-		try {
-			if (typeof window === 'undefined' || !window.console || !window.console.log) {
-				return;
-			}
-			window.console.log('[wcsc-debug][cartState] ' + label, data || {});
-		} catch (e) {}
-	}
-
 	function getCookieValue(name) {
 		try {
 			if (typeof document === 'undefined' || !document.cookie) {
@@ -95,26 +86,12 @@ export function createCartState(options) {
 		var storedWooCartHash = getSessionValue(wooCartHashStorageKey);
 		var currentAuthState = getAuthState();
 		var storedAuthState = getSessionValue(authStateStorageKey);
-		debugLog('initFromSession:start', {
-			currentAuthState: currentAuthState,
-			storedAuthState: storedAuthState || '',
-			currentWooCartHash: currentWooCartHash || '',
-			storedWooCartHash: storedWooCartHash || '',
-			localizedNoncePresent: !!(wcSideCart && wcSideCart.storeApiNonce),
-			localizedCartTokenPresent: !!(wcSideCart && wcSideCart.cartToken),
-			storedNoncePresent: !!getSessionValue(storeApiNonceStorageKey),
-			storedCartTokenPresent: !!getSessionValue(cartTokenStorageKey)
-		});
 		if (storedAuthState && storedAuthState !== currentAuthState) {
 			wcSideCart.storeApiNonce = '';
 			wcSideCart.cartToken = '';
 			setSessionValue(storeApiNonceStorageKey, '');
 			setSessionValue(cartTokenStorageKey, '');
 			setSessionValue(wooCartHashStorageKey, currentWooCartHash);
-			debugLog('initFromSession:authStateChanged', {
-				storedAuthState: storedAuthState,
-				currentAuthState: currentAuthState
-			});
 		}
 		setSessionValue(authStateStorageKey, currentAuthState);
 		if (storedWooCartHash && currentWooCartHash && storedWooCartHash !== currentWooCartHash) {
@@ -122,10 +99,6 @@ export function createCartState(options) {
 			setSessionValue(storeApiNonceStorageKey, '');
 			setSessionValue(cartTokenStorageKey, '');
 			setSessionValue(wooCartHashStorageKey, currentWooCartHash);
-			debugLog('initFromSession:wooCartHashChanged', {
-				storedWooCartHash: storedWooCartHash,
-				currentWooCartHash: currentWooCartHash
-			});
 			return;
 		}
 		var storedNonce = getSessionValue(storeApiNonceStorageKey);
@@ -140,14 +113,6 @@ export function createCartState(options) {
 		if (currentWooCartHash && !storedWooCartHash) {
 			setSessionValue(wooCartHashStorageKey, currentWooCartHash);
 		}
-		debugLog('initFromSession:end', {
-			activeAuthState: currentAuthState,
-			activeWooCartHash: getWooCartHash() || '',
-			activeNoncePresent: !!(wcSideCart && wcSideCart.storeApiNonce),
-			activeCartTokenPresent: !!(wcSideCart && wcSideCart.cartToken),
-			nonceSource: (storedNonce && currentAuthState !== 'logged-in') ? 'session' : 'localized-or-empty',
-			cartTokenSource: storedCartToken ? 'session' : 'localized-or-empty'
-		});
 	}
 
 	function updateFromResponseHeaders(headers) {
@@ -171,12 +136,6 @@ export function createCartState(options) {
 			setSessionValue(wooCartHashStorageKey, currentWooCartHash);
 		}
 		setSessionValue(authStateStorageKey, getAuthState());
-		debugLog('updateFromResponseHeaders', {
-			refreshedNoncePresent: !!refreshedNonce,
-			refreshedCartTokenPresent: !!refreshedCartToken,
-			currentWooCartHash: currentWooCartHash || '',
-			currentAuthState: getAuthState()
-		});
 	}
 
 	function clearTokens() {
@@ -187,10 +146,6 @@ export function createCartState(options) {
 		wcSideCart.cartToken = '';
 		setSessionValue(storeApiNonceStorageKey, '');
 		setSessionValue(cartTokenStorageKey, '');
-		debugLog('clearTokens', {
-			currentWooCartHash: getWooCartHash() || '',
-			currentAuthState: getAuthState()
-		});
 	}
 
 	function clearCartToken() {
@@ -199,10 +154,6 @@ export function createCartState(options) {
 		}
 		wcSideCart.cartToken = '';
 		setSessionValue(cartTokenStorageKey, '');
-		debugLog('clearCartToken', {
-			currentWooCartHash: getWooCartHash() || '',
-			currentAuthState: getAuthState()
-		});
 	}
 
 	function updateCountFromCart(cart) {

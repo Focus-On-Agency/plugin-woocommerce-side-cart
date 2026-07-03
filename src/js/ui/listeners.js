@@ -114,20 +114,11 @@ export function setupUiListeners(options) {
 		if (preferSession && cartState && typeof cartState.clearCartToken === 'function') {
 			cartState.clearCartToken();
 		}
-		debugLog('refreshFromExternalCartChange:start', {
-			shouldAutoOpen: shouldAutoOpen,
-			preferSession: preferSession
-		});
 
 		return storeApi.refreshCart({
 			preferSession: preferSession,
 			omitCartToken: preferSession
 		}).then(function(cart) {
-			debugLog('refreshFromExternalCartChange:success', {
-				shouldAutoOpen: shouldAutoOpen,
-				preferSession: preferSession,
-				itemsCount: cart && cart.items && cart.items.length ? cart.items.length : 0
-			});
 			if (cartState) {
 				cartState.updateCountFromCart(cart);
 			}
@@ -148,13 +139,7 @@ export function setupUiListeners(options) {
 			if (document.body.classList.contains('wc-side-cart-is-open')) {
 				renderCart(cart);
 			}
-		}).catch(function(err) {
-			debugLog('refreshFromExternalCartChange:error', {
-				shouldAutoOpen: shouldAutoOpen,
-				message: err && err.message ? String(err.message) : '',
-				status: err && err.status ? err.status : ''
-			}, 'warn');
-		});
+		}).catch(function() {});
 	}
 
 	function recoverFromStoreApiFailure(options) {
@@ -257,16 +242,6 @@ export function setupUiListeners(options) {
 	var removeSel = getSelector('remove');
 	var backdropSel = getSelector('backdrop');
 
-	function debugLog(label, data, method) {
-		try {
-			if (typeof window === 'undefined' || !window.console || !window.console.log) {
-				return;
-			}
-			var logMethod = (method && typeof window.console[method] === 'function') ? method : 'log';
-			window.console[logMethod]('[wcsc-debug][listeners] ' + label, data || {});
-		} catch (e) {}
-	}
-
 	var panelEl = null;
 	var panelHandlersBound = false;
 
@@ -344,10 +319,6 @@ export function setupUiListeners(options) {
 
 			var cartItemKey = remove.getAttribute('data-cart_item_key');
 			var fallbackUrl = remove.getAttribute('href') || ((wcSideCart && wcSideCart.urls && wcSideCart.urls.cart) ? wcSideCart.urls.cart : '/');
-			debugLog('removeClick', {
-				cartItemKey: cartItemKey || '',
-				fallbackUrl: fallbackUrl || ''
-			});
 
 			if (!cartItemKey) {
 				window.location = fallbackUrl;
@@ -358,17 +329,8 @@ export function setupUiListeners(options) {
 			setBusy(item, true);
 
 			storeApi.removeItem(cartItemKey).then(function(cart) {
-				debugLog('removeClick:success', {
-					cartItemKey: cartItemKey,
-					itemsCount: cart && cart.items && cart.items.length ? cart.items.length : 0
-				});
 				renderCart(cart);
-			}).catch(function(err) {
-				debugLog('removeClick:error', {
-					cartItemKey: cartItemKey,
-					message: err && err.message ? String(err.message) : '',
-					status: err && err.status ? err.status : ''
-				}, 'warn');
+			}).catch(function() {
 				return recoverFromStoreApiFailure({ fallbackUrl: fallbackUrl });
 			}).finally(function() {
 				setBusy(item, false);
@@ -462,13 +424,6 @@ export function setupUiListeners(options) {
 						shouldAutoOpen = true;
 					}
 				}
-				debugLog('added_to_cart:event', {
-					cartHash: cartHash || '',
-					fragmentsPresent: !!fragments,
-					buttonTag: buttonEl && buttonEl.tagName ? buttonEl.tagName : '',
-					buttonClass: buttonEl && buttonEl.className ? String(buttonEl.className) : '',
-					shouldAutoOpen: shouldAutoOpen
-				});
 				refreshFromExternalCartChange({
 					shouldAutoOpen: shouldAutoOpen,
 					preferSession: true
@@ -481,15 +436,8 @@ export function setupUiListeners(options) {
 		document.body.addEventListener('wc-blocks_added_to_cart', function(event) {
 			var detail = event && event.detail ? event.detail : {};
 			if (detail && detail.source === 'wc-side-cart') {
-				debugLog('wc-blocks_added_to_cart:ignored', {
-					mutation: detail.mutation || '',
-					cartItemKey: detail.cartItemKey || ''
-				});
 				return;
 			}
-			debugLog('wc-blocks_added_to_cart:event', {
-				shouldAutoOpen: true
-			});
 			refreshFromExternalCartChange({
 				shouldAutoOpen: true,
 				preferSession: true
@@ -500,15 +448,8 @@ export function setupUiListeners(options) {
 	document.body.addEventListener('wc-blocks_removed_from_cart', function(event) {
 		var detail = event && event.detail ? event.detail : {};
 		if (detail && detail.source === 'wc-side-cart') {
-			debugLog('wc-blocks_removed_from_cart:ignored', {
-				mutation: detail.mutation || '',
-				cartItemKey: detail.cartItemKey || ''
-			});
 			return;
 		}
-		debugLog('wc-blocks_removed_from_cart:event', {
-			shouldAutoOpen: false
-		});
 		refreshFromExternalCartChange({
 			shouldAutoOpen: false,
 			preferSession: true
