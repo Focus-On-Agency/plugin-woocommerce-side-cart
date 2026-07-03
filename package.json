@@ -8,7 +8,7 @@
 		"ci": "npm run lint:js && npm run build"
 	},
 	"devDependencies": {
-		"esbuild": "^0.28.0",
+		"esbuild": "^0.28.1",
 		"eslint": "^10.4.1"
 	}
 }
