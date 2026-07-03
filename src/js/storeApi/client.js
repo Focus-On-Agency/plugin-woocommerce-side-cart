@@ -208,9 +208,15 @@ export function createStoreApiClient(options) {
 	}
 
 	function buildBlocksInvalidationPayload(options) {
-		var payload = { preserveCartData: false };
+		var payload = {
+			preserveCartData: false,
+			source: 'wc-side-cart'
+		};
 		if (options && typeof options.cartItemKey === 'string' && options.cartItemKey) {
 			payload.cartItemKey = options.cartItemKey;
+		}
+		if (options && typeof options.mutation === 'string' && options.mutation) {
+			payload.mutation = options.mutation;
 		}
 		return payload;
 	}
@@ -339,7 +345,9 @@ export function createStoreApiClient(options) {
 
 		var cartToken = cartState ? cartState.getCartToken() : '';
 		var omitCartToken = !!(options && options.omitCartToken);
-		if (cartToken && !omitCartToken) {
+		var preferSession = !!(options && options.preferSession);
+		var shouldSendCartToken = !!(cartToken && !omitCartToken && !(preferSession && nonce));
+		if (shouldSendCartToken) {
 			headers['Cart-Token'] = cartToken;
 		}
 
@@ -352,8 +360,9 @@ export function createStoreApiClient(options) {
 			method: method,
 			url: finalUrl,
 			hasNonce: !!nonce,
-			hasCartToken: !!(cartToken && !omitCartToken),
+			hasCartToken: shouldSendCartToken,
 			omitCartToken: omitCartToken,
+			preferSession: preferSession,
 			body: body || null
 		});
 		return window.fetch(finalUrl, {
@@ -419,7 +428,7 @@ export function createStoreApiClient(options) {
 		});
 	}
 
-	function refreshCart() {
+	function refreshCart(options) {
 		if (!wcSideCart || !wcSideCart.endpoints || !wcSideCart.endpoints.cart) {
 			return Promise.reject(new Error('Missing cart endpoint'));
 		}
@@ -431,9 +440,11 @@ export function createStoreApiClient(options) {
 		}
 
 		debugLog('refreshCart:start', {
-			url: wcSideCart.endpoints.cart
+			url: wcSideCart.endpoints.cart,
+			preferSession: !!(options && options.preferSession),
+			omitCartToken: !!(options && options.omitCartToken)
 		});
-		refreshCartPromise = request(wcSideCart.endpoints.cart, 'GET').then(function(cart) {
+		refreshCartPromise = request(wcSideCart.endpoints.cart, 'GET', null, undefined, options).then(function(cart) {
 			debugLog('refreshCart:success', {
 				itemsCount: cart && cart.items && cart.items.length ? cart.items.length : 0
 			});
@@ -449,7 +460,10 @@ export function createStoreApiClient(options) {
 			debugLog('refreshCart:retryAfterClearTokens', {
 				url: wcSideCart.endpoints.cart
 			});
-			return request(wcSideCart.endpoints.cart, 'GET').catch(function() {
+			return request(wcSideCart.endpoints.cart, 'GET', null, undefined, {
+				omitCartToken: true,
+				preferSession: true
+			}).catch(function() {
 				throw err;
 			});
 		});
@@ -463,11 +477,18 @@ export function createStoreApiClient(options) {
 		return refreshCartPromise;
 	}
 
-	function ensureCartToken() {
+	function ensureCartToken(options) {
+		var nonce = cartState ? cartState.getStoreApiNonce() : '';
 		var token = cartState ? cartState.getCartToken() : '';
+		var preferSession = !!(options && options.preferSession);
 		debugLog('ensureCartToken', {
-			hasToken: !!token
+			hasToken: !!token,
+			hasNonce: !!nonce,
+			preferSession: preferSession
 		});
+		if (nonce && preferSession) {
+			return Promise.resolve(null);
+		}
 		if (token) {
 			return Promise.resolve(token);
 		}
@@ -482,7 +503,7 @@ export function createStoreApiClient(options) {
 		if (!wcSideCart || !wcSideCart.endpoints || !wcSideCart.endpoints.cartUpdateItem) {
 			return Promise.reject(new Error('Missing update item endpoint'));
 		}
-		return ensureCartToken().then(function() {
+		return ensureCartToken({ preferSession: true }).then(function() {
 			if (updateItemAbort) {
 				updateItemAbort.abort();
 			}
@@ -490,7 +511,9 @@ export function createStoreApiClient(options) {
 			return request(wcSideCart.endpoints.cartUpdateItem, 'POST', {
 				key: cartItemKey,
 				quantity: quantity
-			}, updateItemAbort ? updateItemAbort.signal : undefined);
+			}, updateItemAbort ? updateItemAbort.signal : undefined, {
+				preferSession: true
+			});
 		}).then(function(cart) {
 			return syncBlocksAfterMutation({
 				mutation: 'setQuantity',
@@ -508,14 +531,16 @@ export function createStoreApiClient(options) {
 		debugLog('removeItem:start', {
 			cartItemKey: cartItemKey
 		});
-		return ensureCartToken().then(function() {
+		return ensureCartToken({ preferSession: true }).then(function() {
 			if (removeItemAbort) {
 				removeItemAbort.abort();
 			}
 			removeItemAbort = window.AbortController ? new AbortController() : null;
 			return request(wcSideCart.endpoints.cartRemoveItem, 'POST', {
 				key: cartItemKey
-			}, removeItemAbort ? removeItemAbort.signal : undefined);
+			}, removeItemAbort ? removeItemAbort.signal : undefined, {
+				preferSession: true
+			});
 		}).then(function(cart) {
 			debugLog('removeItem:success', {
 				cartItemKey: cartItemKey,

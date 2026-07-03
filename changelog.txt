@@ -1,5 +1,9 @@
 *** WooCommerce Side Cart ***
 
+2026.07.03 - version 3.3.3
+ * Fix: prefer the WooCommerce session/nonce over persisted Cart-Token during side-cart remove/update and after external add-to-cart events.
+ * Fix: ignore internal block cart sync events emitted by the plugin itself to avoid duplicate refresh/open flows after remove-item mutations.
+
 2026.07.03 - version 3.3.2
  * Debug: add temporary console logging to trace Store API cart token, cart hash, remove-item and external add-to-cart sync flows.
  * Fix: preserve safer auth-aware client state handling for Store API nonce/bootstrap.

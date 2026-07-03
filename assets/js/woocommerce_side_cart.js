@@ -337,6 +337,17 @@
         currentAuthState: getAuthState()
       });
     }
+    function clearCartToken() {
+      if (!wcSideCart) {
+        return;
+      }
+      wcSideCart.cartToken = "";
+      setSessionValue(cartTokenStorageKey, "");
+      debugLog("clearCartToken", {
+        currentWooCartHash: getWooCartHash() || "",
+        currentAuthState: getAuthState()
+      });
+    }
     function updateCountFromCart(cart) {
       var count = String(getCartItemCount(cart));
       var isZero = count === "0";
@@ -380,6 +391,7 @@
       initFromSession: initFromSession,
       updateFromResponseHeaders: updateFromResponseHeaders,
       clearTokens: clearTokens,
+      clearCartToken: clearCartToken,
       updateCountFromCart: updateCountFromCart,
       getStoreApiNonce: getStoreApiNonce,
       getCartToken: getCartToken
@@ -569,9 +581,15 @@
       }
     }
     function buildBlocksInvalidationPayload(options2) {
-      var payload = { preserveCartData: false };
+      var payload = {
+        preserveCartData: false,
+        source: "wc-side-cart"
+      };
       if (options2 && typeof options2.cartItemKey === "string" && options2.cartItemKey) {
         payload.cartItemKey = options2.cartItemKey;
+      }
+      if (options2 && typeof options2.mutation === "string" && options2.mutation) {
+        payload.mutation = options2.mutation;
       }
       return payload;
     }
@@ -685,7 +703,9 @@
       }
       var cartToken = cartState ? cartState.getCartToken() : "";
       var omitCartToken = !!(options2 && options2.omitCartToken);
-      if (cartToken && !omitCartToken) {
+      var preferSession = !!(options2 && options2.preferSession);
+      var shouldSendCartToken = !!(cartToken && !omitCartToken && !(preferSession && nonce));
+      if (shouldSendCartToken) {
         headers["Cart-Token"] = cartToken;
       }
       if (method !== "GET") {
@@ -696,8 +716,9 @@
         method: method,
         url: finalUrl,
         hasNonce: !!nonce,
-        hasCartToken: !!(cartToken && !omitCartToken),
+        hasCartToken: shouldSendCartToken,
         omitCartToken: omitCartToken,
+        preferSession: preferSession,
         body: body || null
       });
       return window.fetch(finalUrl, {
@@ -760,7 +781,7 @@
         return response.json();
       });
     }
-    function refreshCart() {
+    function refreshCart(options2) {
       if (!wcSideCart || !wcSideCart.endpoints || !wcSideCart.endpoints.cart) {
         return Promise.reject(new Error("Missing cart endpoint"));
       }
@@ -771,9 +792,11 @@
         return refreshCartPromise;
       }
       debugLog("refreshCart:start", {
-        url: wcSideCart.endpoints.cart
+        url: wcSideCart.endpoints.cart,
+        preferSession: !!(options2 && options2.preferSession),
+        omitCartToken: !!(options2 && options2.omitCartToken)
       });
-      refreshCartPromise = request(wcSideCart.endpoints.cart, "GET").then(function(cart) {
+      refreshCartPromise = request(wcSideCart.endpoints.cart, "GET", null, void 0, options2).then(function(cart) {
         debugLog("refreshCart:success", {
           itemsCount: cart && cart.items && cart.items.length ? cart.items.length : 0
         });
@@ -789,7 +812,10 @@
         debugLog("refreshCart:retryAfterClearTokens", {
           url: wcSideCart.endpoints.cart
         });
-        return request(wcSideCart.endpoints.cart, "GET").catch(function() {
+        return request(wcSideCart.endpoints.cart, "GET", null, void 0, {
+          omitCartToken: true,
+          preferSession: true
+        }).catch(function() {
           throw err;
         });
       });
@@ -800,11 +826,18 @@
       });
       return refreshCartPromise;
     }
-    function ensureCartToken() {
+    function ensureCartToken(options2) {
+      var nonce = cartState ? cartState.getStoreApiNonce() : "";
       var token = cartState ? cartState.getCartToken() : "";
+      var preferSession = !!(options2 && options2.preferSession);
       debugLog("ensureCartToken", {
-        hasToken: !!token
+        hasToken: !!token,
+        hasNonce: !!nonce,
+        preferSession: preferSession
       });
+      if (nonce && preferSession) {
+        return Promise.resolve(null);
+      }
       if (token) {
         return Promise.resolve(token);
       }
@@ -818,7 +851,7 @@
       if (!wcSideCart || !wcSideCart.endpoints || !wcSideCart.endpoints.cartUpdateItem) {
         return Promise.reject(new Error("Missing update item endpoint"));
       }
-      return ensureCartToken().then(function() {
+      return ensureCartToken({ preferSession: true }).then(function() {
         if (updateItemAbort) {
           updateItemAbort.abort();
         }
@@ -826,7 +859,9 @@
         return request(wcSideCart.endpoints.cartUpdateItem, "POST", {
           key: cartItemKey,
           quantity: quantity
-        }, updateItemAbort ? updateItemAbort.signal : void 0);
+        }, updateItemAbort ? updateItemAbort.signal : void 0, {
+          preferSession: true
+        });
       }).then(function(cart) {
         return syncBlocksAfterMutation({
           mutation: "setQuantity",
@@ -843,14 +878,16 @@
       debugLog("removeItem:start", {
         cartItemKey: cartItemKey
       });
-      return ensureCartToken().then(function() {
+      return ensureCartToken({ preferSession: true }).then(function() {
         if (removeItemAbort) {
           removeItemAbort.abort();
         }
         removeItemAbort = window.AbortController ? new AbortController() : null;
         return request(wcSideCart.endpoints.cartRemoveItem, "POST", {
           key: cartItemKey
-        }, removeItemAbort ? removeItemAbort.signal : void 0);
+        }, removeItemAbort ? removeItemAbort.signal : void 0, {
+          preferSession: true
+        });
       }).then(function(cart) {
         debugLog("removeItem:success", {
           cartItemKey: cartItemKey,
@@ -2749,12 +2786,21 @@
     }
     function refreshFromExternalCartChange(options2) {
       var shouldAutoOpen = !!(options2 && options2.shouldAutoOpen);
+      var preferSession = !!(options2 && options2.preferSession);
+      if (preferSession && cartState && typeof cartState.clearCartToken === "function") {
+        cartState.clearCartToken();
+      }
       debugLog("refreshFromExternalCartChange:start", {
-        shouldAutoOpen: shouldAutoOpen
+        shouldAutoOpen: shouldAutoOpen,
+        preferSession: preferSession
       });
-      return storeApi.refreshCart().then(function(cart) {
+      return storeApi.refreshCart({
+        preferSession: preferSession,
+        omitCartToken: preferSession
+      }).then(function(cart) {
         debugLog("refreshFromExternalCartChange:success", {
           shouldAutoOpen: shouldAutoOpen,
+          preferSession: preferSession,
           itemsCount: cart && cart.items && cart.items.length ? cart.items.length : 0
         });
         if (cartState) {
@@ -3060,23 +3106,48 @@
             buttonClass: buttonEl && buttonEl.className ? String(buttonEl.className) : "",
             shouldAutoOpen: shouldAutoOpen
           });
-          refreshFromExternalCartChange({ shouldAutoOpen: shouldAutoOpen });
+          refreshFromExternalCartChange({
+            shouldAutoOpen: shouldAutoOpen,
+            preferSession: true
+          });
         });
       }
     }
     if (autoOpenOnAddToCart) {
-      document.body.addEventListener("wc-blocks_added_to_cart", function() {
+      document.body.addEventListener("wc-blocks_added_to_cart", function(event) {
+        var detail = event && event.detail ? event.detail : {};
+        if (detail && detail.source === "wc-side-cart") {
+          debugLog("wc-blocks_added_to_cart:ignored", {
+            mutation: detail.mutation || "",
+            cartItemKey: detail.cartItemKey || ""
+          });
+          return;
+        }
         debugLog("wc-blocks_added_to_cart:event", {
           shouldAutoOpen: true
         });
-        refreshFromExternalCartChange({ shouldAutoOpen: true });
+        refreshFromExternalCartChange({
+          shouldAutoOpen: true,
+          preferSession: true
+        });
       });
     }
-    document.body.addEventListener("wc-blocks_removed_from_cart", function() {
+    document.body.addEventListener("wc-blocks_removed_from_cart", function(event) {
+      var detail = event && event.detail ? event.detail : {};
+      if (detail && detail.source === "wc-side-cart") {
+        debugLog("wc-blocks_removed_from_cart:ignored", {
+          mutation: detail.mutation || "",
+          cartItemKey: detail.cartItemKey || ""
+        });
+        return;
+      }
       debugLog("wc-blocks_removed_from_cart:event", {
         shouldAutoOpen: false
       });
-      refreshFromExternalCartChange({ shouldAutoOpen: false });
+      refreshFromExternalCartChange({
+        shouldAutoOpen: false,
+        preferSession: true
+      });
     });
   }
 

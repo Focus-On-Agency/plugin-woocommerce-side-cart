@@ -110,13 +110,22 @@ export function setupUiListeners(options) {
 
 	function refreshFromExternalCartChange(options) {
 		var shouldAutoOpen = !!(options && options.shouldAutoOpen);
+		var preferSession = !!(options && options.preferSession);
+		if (preferSession && cartState && typeof cartState.clearCartToken === 'function') {
+			cartState.clearCartToken();
+		}
 		debugLog('refreshFromExternalCartChange:start', {
-			shouldAutoOpen: shouldAutoOpen
+			shouldAutoOpen: shouldAutoOpen,
+			preferSession: preferSession
 		});
 
-		return storeApi.refreshCart().then(function(cart) {
+		return storeApi.refreshCart({
+			preferSession: preferSession,
+			omitCartToken: preferSession
+		}).then(function(cart) {
 			debugLog('refreshFromExternalCartChange:success', {
 				shouldAutoOpen: shouldAutoOpen,
+				preferSession: preferSession,
 				itemsCount: cart && cart.items && cart.items.length ? cart.items.length : 0
 			});
 			if (cartState) {
@@ -460,24 +469,49 @@ export function setupUiListeners(options) {
 					buttonClass: buttonEl && buttonEl.className ? String(buttonEl.className) : '',
 					shouldAutoOpen: shouldAutoOpen
 				});
-				refreshFromExternalCartChange({ shouldAutoOpen: shouldAutoOpen });
+				refreshFromExternalCartChange({
+					shouldAutoOpen: shouldAutoOpen,
+					preferSession: true
+				});
 			});
 		}
 	}
 
 	if (autoOpenOnAddToCart) {
-		document.body.addEventListener('wc-blocks_added_to_cart', function() {
+		document.body.addEventListener('wc-blocks_added_to_cart', function(event) {
+			var detail = event && event.detail ? event.detail : {};
+			if (detail && detail.source === 'wc-side-cart') {
+				debugLog('wc-blocks_added_to_cart:ignored', {
+					mutation: detail.mutation || '',
+					cartItemKey: detail.cartItemKey || ''
+				});
+				return;
+			}
 			debugLog('wc-blocks_added_to_cart:event', {
 				shouldAutoOpen: true
 			});
-			refreshFromExternalCartChange({ shouldAutoOpen: true });
+			refreshFromExternalCartChange({
+				shouldAutoOpen: true,
+				preferSession: true
+			});
 		});
 	}
 
-	document.body.addEventListener('wc-blocks_removed_from_cart', function() {
+	document.body.addEventListener('wc-blocks_removed_from_cart', function(event) {
+		var detail = event && event.detail ? event.detail : {};
+		if (detail && detail.source === 'wc-side-cart') {
+			debugLog('wc-blocks_removed_from_cart:ignored', {
+				mutation: detail.mutation || '',
+				cartItemKey: detail.cartItemKey || ''
+			});
+			return;
+		}
 		debugLog('wc-blocks_removed_from_cart:event', {
 			shouldAutoOpen: false
 		});
-		refreshFromExternalCartChange({ shouldAutoOpen: false });
+		refreshFromExternalCartChange({
+			shouldAutoOpen: false,
+			preferSession: true
+		});
 	});
 }

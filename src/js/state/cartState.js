@@ -193,6 +193,18 @@ export function createCartState(options) {
 		});
 	}
 
+	function clearCartToken() {
+		if (!wcSideCart) {
+			return;
+		}
+		wcSideCart.cartToken = '';
+		setSessionValue(cartTokenStorageKey, '');
+		debugLog('clearCartToken', {
+			currentWooCartHash: getWooCartHash() || '',
+			currentAuthState: getAuthState()
+		});
+	}
+
 	function updateCountFromCart(cart) {
 		var count = String(getCartItemCount(cart));
 		var isZero = count === '0';
@@ -241,6 +253,7 @@ export function createCartState(options) {
 		initFromSession: initFromSession,
 		updateFromResponseHeaders: updateFromResponseHeaders,
 		clearTokens: clearTokens,
+		clearCartToken: clearCartToken,
 		updateCountFromCart: updateCountFromCart,
 		getStoreApiNonce: getStoreApiNonce,
 		getCartToken: getCartToken
