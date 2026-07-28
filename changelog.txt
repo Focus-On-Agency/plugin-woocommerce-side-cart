@@ -1,5 +1,8 @@
 *** WooCommerce Side Cart ***
 
+2026.07.28 - version 3.3.5
+ * Fix: apply/remove coupon now prefer the WooCommerce session/nonce over persisted Cart-Token (aligns coupon mutations with update/remove item) to keep discounts applied at Checkout (Classic + Blocks).
+
 2026.07.03 - version 3.3.4
  * Cleanup: remove temporary console debug tracing used to diagnose the side-cart remove/add-to-cart synchronization issue.
  * Fix: keep the session-first cart synchronization introduced in 3.3.3 for remove-item, quantity updates and external add-to-cart refreshes.

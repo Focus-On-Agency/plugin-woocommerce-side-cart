@@ -794,12 +794,14 @@
       if (!normalized) {
         return Promise.resolve(null);
       }
-      return ensureCartToken().then(function() {
+      return ensureCartToken({ preferSession: true }).then(function() {
         if (couponAbort) {
           couponAbort.abort();
         }
         couponAbort = window.AbortController ? new AbortController() : null;
-        return request(wcSideCart.endpoints.cartApplyCoupon, "POST", { code: normalized }, couponAbort ? couponAbort.signal : void 0);
+        return request(wcSideCart.endpoints.cartApplyCoupon, "POST", { code: normalized }, couponAbort ? couponAbort.signal : void 0, {
+          preferSession: true
+        });
       }).then(function(cart) {
         return syncBlocksAfterMutation({ mutation: "coupon", removedFromCart: false }, cart);
       });
@@ -812,12 +814,14 @@
       if (!normalized) {
         return Promise.resolve(null);
       }
-      return ensureCartToken().then(function() {
+      return ensureCartToken({ preferSession: true }).then(function() {
         if (couponAbort) {
           couponAbort.abort();
         }
         couponAbort = window.AbortController ? new AbortController() : null;
-        return request(wcSideCart.endpoints.cartRemoveCoupon, "POST", { code: normalized }, couponAbort ? couponAbort.signal : void 0);
+        return request(wcSideCart.endpoints.cartRemoveCoupon, "POST", { code: normalized }, couponAbort ? couponAbort.signal : void 0, {
+          preferSession: true
+        });
       }).then(function(cart) {
         return syncBlocksAfterMutation({ mutation: "coupon", removedFromCart: false }, cart);
       });

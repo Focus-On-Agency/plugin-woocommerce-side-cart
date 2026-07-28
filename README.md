@@ -8,6 +8,7 @@ The UI rendering is mainly **client-side**: the server markup is a stable contai
 
 See [changelog.txt](./changelog.txt).
 
+- 3.3.5: Coupon apply/remove now prefer session/nonce over persisted Cart-Token to keep discounts applied at Checkout (Classic + Blocks).
 - 3.3.4: Remove temporary debug tracing; keep the session-first cart synchronization fix for remove-item, quantity updates and external add-to-cart refreshes.
 - 3.3.3: Prefer WooCommerce session/nonce over persisted Cart-Token after external add-to-cart flows; ignore plugin-originated internal block cart sync events.
 - 3.3.2: Temporary debug build with console tracing for Store API cart token / add-to-cart sync, plus auth-aware client state handling.

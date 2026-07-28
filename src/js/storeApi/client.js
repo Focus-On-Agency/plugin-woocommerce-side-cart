@@ -497,12 +497,14 @@ export function createStoreApiClient(options) {
 		if (!normalized) {
 			return Promise.resolve(null);
 		}
-		return ensureCartToken().then(function() {
+		return ensureCartToken({ preferSession: true }).then(function() {
 			if (couponAbort) {
 				couponAbort.abort();
 			}
 			couponAbort = window.AbortController ? new AbortController() : null;
-			return request(wcSideCart.endpoints.cartApplyCoupon, 'POST', { code: normalized }, couponAbort ? couponAbort.signal : undefined);
+			return request(wcSideCart.endpoints.cartApplyCoupon, 'POST', { code: normalized }, couponAbort ? couponAbort.signal : undefined, {
+				preferSession: true
+			});
 		}).then(function(cart) {
 			return syncBlocksAfterMutation({ mutation: 'coupon', removedFromCart: false }, cart);
 		});
@@ -516,12 +518,14 @@ export function createStoreApiClient(options) {
 		if (!normalized) {
 			return Promise.resolve(null);
 		}
-		return ensureCartToken().then(function() {
+		return ensureCartToken({ preferSession: true }).then(function() {
 			if (couponAbort) {
 				couponAbort.abort();
 			}
 			couponAbort = window.AbortController ? new AbortController() : null;
-			return request(wcSideCart.endpoints.cartRemoveCoupon, 'POST', { code: normalized }, couponAbort ? couponAbort.signal : undefined);
+			return request(wcSideCart.endpoints.cartRemoveCoupon, 'POST', { code: normalized }, couponAbort ? couponAbort.signal : undefined, {
+				preferSession: true
+			});
 		}).then(function(cart) {
 			return syncBlocksAfterMutation({ mutation: 'coupon', removedFromCart: false }, cart);
 		});
