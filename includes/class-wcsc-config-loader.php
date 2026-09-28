@@ -138,6 +138,13 @@ class WCSC_ConfigLoader {
 			),
 			// Default MUST remain "post" for backward compatibility.
 			'hooksHtmlPolicy' => 'post',
+			// Shipping progress bar (sanitization happens later in buildClientSettings).
+			'shippingProgress' => array(
+				'enabled'     => false,
+				'threshold'   => 0.0,
+				'textPending' => '',
+				'textReached' => '',
+			),
 		);
 	}
 
@@ -355,6 +362,22 @@ class WCSC_ConfigLoader {
 			}
 		}
 
+		if ( isset( $configFromFile['shippingProgress'] ) && is_array( $configFromFile['shippingProgress'] ) ) {
+			if ( isset( $configFromFile['shippingProgress']['enabled'] ) ) {
+				$config['shippingProgress']['enabled'] = (bool) $configFromFile['shippingProgress']['enabled'];
+			}
+			if ( isset( $configFromFile['shippingProgress']['threshold'] ) && is_numeric( $configFromFile['shippingProgress']['threshold'] ) ) {
+				$progressThreshold = (float) $configFromFile['shippingProgress']['threshold'];
+				$config['shippingProgress']['threshold'] = $progressThreshold > 0 ? $progressThreshold : 0.0;
+			}
+			if ( isset( $configFromFile['shippingProgress']['textPending'] ) ) {
+				$config['shippingProgress']['textPending'] = (string) $configFromFile['shippingProgress']['textPending'];
+			}
+			if ( isset( $configFromFile['shippingProgress']['textReached'] ) ) {
+				$config['shippingProgress']['textReached'] = (string) $configFromFile['shippingProgress']['textReached'];
+			}
+		}
+
 		return $config;
 	}
 
@@ -505,6 +528,20 @@ class WCSC_ConfigLoader {
 			$policy = $defaults['hooksHtmlPolicy'];
 		}
 		$config['hooksHtmlPolicy'] = $policy;
+
+		// shippingProgress. HTML strings are sanitized later in buildClientSettings.
+		if ( ! isset( $config['shippingProgress'] ) || ! is_array( $config['shippingProgress'] ) ) {
+			$config['shippingProgress'] = $defaults['shippingProgress'];
+		}
+		$config['shippingProgress']['enabled'] = isset( $config['shippingProgress']['enabled'] ) ? (bool) $config['shippingProgress']['enabled'] : (bool) $defaults['shippingProgress']['enabled'];
+		$progressThreshold = isset( $config['shippingProgress']['threshold'] ) && is_numeric( $config['shippingProgress']['threshold'] ) ? (float) $config['shippingProgress']['threshold'] : (float) $defaults['shippingProgress']['threshold'];
+		if ( $progressThreshold < 0 ) {
+			$progressThreshold = 0.0;
+		}
+		$config['shippingProgress']['threshold'] = $progressThreshold;
+		foreach ( array( 'textPending', 'textReached' ) as $progressTextField ) {
+			$config['shippingProgress'][ $progressTextField ] = isset( $config['shippingProgress'][ $progressTextField ] ) ? (string) $config['shippingProgress'][ $progressTextField ] : '';
+		}
 
 		return $config;
 	}

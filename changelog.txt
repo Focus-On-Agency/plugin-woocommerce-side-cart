@@ -1,5 +1,8 @@
 *** WooCommerce Side Cart ***
 
+2026.09.28 - version 3.4.1
+ * Fix: shippingProgress config values were discarded by the ConfigLoader whitelist (missing group in getDefaults/mergeFileConfig/validateConfig), so the progress bar never activated; the group is now merged and validated like the other root keys.
+
 2026.09.28 - version 3.4.0
  * Feature: optional shipping progress bar (free-shipping goal) rendered above the items list via new config group `shippingProgress` (enabled, threshold, textPending, textReached).
  * Feature: progress texts accept sanitized HTML (strict policy) with `[data-wcsc-amount]` slots auto-filled with the formatted remaining amount; the bar turns green when the threshold is reached.

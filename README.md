@@ -8,6 +8,7 @@ The UI rendering is mainly **client-side**: the server markup is a stable contai
 
 See [changelog.txt](./changelog.txt).
 
+- 3.4.1: Fix shippingProgress config values being discarded by the ConfigLoader whitelist, which prevented the progress bar from activating.
 - 3.4.0: Optional shipping progress bar (free-shipping goal) above the items list with sanitized HTML texts and `[data-wcsc-amount]` slots for the formatted remaining amount.
 - 3.3.5: Coupon apply/remove now prefer session/nonce over persisted Cart-Token to keep discounts applied at Checkout (Classic + Blocks).
 - 3.3.4: Remove temporary debug tracing; keep the session-first cart synchronization fix for remove-item, quantity updates and external add-to-cart refreshes.
