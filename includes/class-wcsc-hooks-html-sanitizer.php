@@ -128,6 +128,8 @@ class WCSC_HooksHtmlSanitizer {
 				'div' => array(
 					'class' => true,
 					'data-hook' => true,
+					// Amount slot for the shipping progress bar templates.
+					'data-wcsc-amount' => true,
 					'aria-label' => true,
 					'aria-hidden' => true,
 					'aria-live' => true,
@@ -135,6 +137,7 @@ class WCSC_HooksHtmlSanitizer {
 				'span' => array(
 					'class' => true,
 					'data-hook' => true,
+					'data-wcsc-amount' => true,
 					'aria-label' => true,
 					'aria-hidden' => true,
 					'aria-live' => true,
@@ -142,12 +145,17 @@ class WCSC_HooksHtmlSanitizer {
 				'p' => array(
 					'class' => true,
 					'data-hook' => true,
+					'data-wcsc-amount' => true,
 					'aria-label' => true,
 					'aria-hidden' => true,
 					'aria-live' => true,
 				),
-				'strong' => array(),
-				'em' => array(),
+				'strong' => array(
+					'data-wcsc-amount' => true,
+				),
+				'em' => array(
+					'data-wcsc-amount' => true,
+				),
 				'br' => array(),
 				'ul' => array(
 					'class' => true,
@@ -173,6 +181,7 @@ class WCSC_HooksHtmlSanitizer {
 				'small' => array(
 					'class' => true,
 					'data-hook' => true,
+					'data-wcsc-amount' => true,
 					'aria-label' => true,
 					'aria-hidden' => true,
 					'aria-live' => true,

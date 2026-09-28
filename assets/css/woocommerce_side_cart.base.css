@@ -486,21 +486,12 @@ body.wc-side-cart-is-open #wc-side-cart-panel {
 .wcsc-shipping-progress {
 	width: 100%;
 	margin-bottom: var(--wcsc-gap);
-	padding: var(--wcsc-item-pad);
-	border: var(--wcsc-item-border);
-	border-radius: var(--wcsc-item-radius);
-	background: var(--wcsc-item-bg-even, rgba(255, 255, 255, 0.78));
-	box-sizing: border-box;
 }
 
 .wcsc-shipping-progress__text {
 	font-size: var(--wcsc-type-sm, 14px);
 	color: var(--wcsc-text);
-	margin-bottom: 8px;
-}
-
-.wcsc-shipping-progress__text:last-child {
-	margin-bottom: 0;
+	margin-bottom: 6px;
 }
 
 .wcsc-shipping-progress__text [data-wcsc-amount]:empty {

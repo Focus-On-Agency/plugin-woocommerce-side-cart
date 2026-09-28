@@ -1,5 +1,9 @@
 *** WooCommerce Side Cart ***
 
+2026.09.28 - version 3.4.2
+ * Fix: the strict HTML policy stripped the `[data-wcsc-amount]` attribute from the shippingProgress templates (e.g. inside `<strong>`), so the amount slot was never filled; the attribute is now allowed on inline/text tags (strong, em, span, small, div, p).
+ * Change: minimized the shipping progress CSS (removed card padding, border, radius and background) to keep the section layout-neutral.
+
 2026.09.28 - version 3.4.1
  * Fix: shippingProgress config values were discarded by the ConfigLoader whitelist (missing group in getDefaults/mergeFileConfig/validateConfig), so the progress bar never activated; the group is now merged and validated like the other root keys.
 
