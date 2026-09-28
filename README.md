@@ -8,6 +8,7 @@ The UI rendering is mainly **client-side**: the server markup is a stable contai
 
 See [changelog.txt](./changelog.txt).
 
+- 3.4.0: Optional shipping progress bar (free-shipping goal) above the items list with sanitized HTML texts and `[data-wcsc-amount]` slots for the formatted remaining amount.
 - 3.3.5: Coupon apply/remove now prefer session/nonce over persisted Cart-Token to keep discounts applied at Checkout (Classic + Blocks).
 - 3.3.4: Remove temporary debug tracing; keep the session-first cart synchronization fix for remove-item, quantity updates and external add-to-cart refreshes.
 - 3.3.3: Prefer WooCommerce session/nonce over persisted Cart-Token after external add-to-cart flows; ignore plugin-originated internal block cart sync events.
@@ -19,6 +20,7 @@ See [changelog.txt](./changelog.txt).
 - Drawer overlay, backdrop, and scroll lock
 - Cart updates via Store API (`/wp-json/wc/store/v1/cart/...`)
 - Quantity editing with stepper (optional) and item removal
+- Optional free-shipping progress bar (config `shippingProgress`)
 - Hard-disabled on Checkout (no assets / no markup)
 - Minimal/editorial UI driven by **CSS variables** (tokens `--wcsc-*`)
 - Extensible via:
@@ -106,6 +108,12 @@ return array(
 		'afterActions' => '',
 	),
 	'hooksHtmlPolicy' => 'post',
+	'shippingProgress' => array(
+		'enabled' => true,
+		'threshold' => 50,
+		'textPending' => 'Add <strong data-wcsc-amount></strong> more to get free shipping!',
+		'textReached' => '<strong>You unlocked free shipping!</strong>',
+	),
 );
 ```
 
@@ -149,6 +157,11 @@ Root keys (top-level):
   - `enabled`: `bool` (default `true`)
   - `maxLength`: `int` clamped `0..50000` (default `5000`)
 - `hooksHtmlPolicy`: `"post"` (default) | `"strict"` | `"none"`
+- `shippingProgress`
+  - `enabled`: `bool` (default `false`)
+  - `threshold`: `number` in major currency units (default `0`; `0` disables the bar)
+  - `textPending`: `string` (sanitized HTML, `strict` policy)
+  - `textReached`: `string` (sanitized HTML, `strict` policy)
 
 ## Full Page Cache (guest) support
 
@@ -319,6 +332,35 @@ Security:
 - `hooksHtmlOptions.maxLength`: clamp 0..50000
 
 Best practice: use HTML hooks to inject **lightweight containers** and update dynamic content via JS on the `side_cart_refreshed` event.
+
+## Shipping progress bar (shippingProgress)
+
+Optional free-shipping goal bar rendered above the items list (re-rendered on every cart update).
+
+- `enabled` (default `false`), `threshold` in major currency units (e.g. `50` = 50.00; `0` disables the bar)
+- `textPending` is shown while the goal is not reached; `textReached` replaces it once reached (bar turns green)
+- Both texts accept **sanitized HTML** (`strict` policy) — no `<script>`, no `on*` attributes
+- Elements with the `data-wcsc-amount` attribute are filled (via `textContent`) with the remaining amount formatted for the store currency
+- Progress is computed from the Store API `totals.total_items` (stable even before a shipping address is chosen) against the configured threshold
+
+Example:
+
+```php
+<?php
+return array(
+	'shippingProgress' => array(
+		'enabled'     => true,
+		'threshold'   => 50,
+		'textPending' => 'Add <strong data-wcsc-amount></strong> more to get free shipping!',
+		'textReached' => '<strong>You unlocked free shipping!</strong>',
+	),
+);
+```
+
+Customization notes:
+
+- Styling is driven by the `--wcsc-*` tokens; the block markup uses `.wcsc-shipping-progress`, `.wcsc-shipping-progress__text`, `.wcsc-shipping-progress__bar`, `.wcsc-shipping-progress__fill` (+ `wcsc-shipping-progress--reached` modifier)
+- The threshold must be aligned by the merchant with the actual WooCommerce free-shipping method setting (`min_amount`): the bar is indicative and does not query shipping zones
 
 ## Public JS events
 

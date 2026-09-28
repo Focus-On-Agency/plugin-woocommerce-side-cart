@@ -58,6 +58,18 @@ class WCSC_HooksHtmlSanitizer {
 	}
 
 	/**
+	 * Sanitizes a single HTML string with the given policy.
+	 *
+	 * @param mixed  $value Candidate HTML string.
+	 * @param string $policy Sanitization policy.
+	 * @param int    $maxLength Max length in characters.
+	 * @return string
+	 */
+	public function sanitizeString( $value, $policy = 'post', $maxLength = 5000 ) {
+		return $this->sanitizeValue( $value, $this->validatePolicy( $policy, 'post' ), $maxLength );
+	}
+
+	/**
 	 * @param mixed  $hooksHtml Candidate hooksHtml array.
 	 * @param string $policy Sanitization policy.
 	 * @param mixed  $options hooksHtml options.
