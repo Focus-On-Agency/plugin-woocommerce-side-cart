@@ -7,7 +7,7 @@
 
 import { qs, qsa, clearNode, setBusy } from '../utils/dom.js';
 import { addQueryArgs } from '../utils/url.js';
-import { createPriceSpan } from '../utils/money.js';
+import { createPriceSpan, moneyFormatValue } from '../utils/money.js';
 
 function sanitizeClassString(value) {
 	if (!value || typeof value !== 'string') {
@@ -47,6 +47,7 @@ export function createRenderer(options) {
 	var uiSettings = settings.ui || {};
 	var compositeSettings = settings.composite || {};
 	var hooksHtml = settings.hooksHtml || {};
+	var shippingProgressSettings = settings.shippingProgress || {};
 	var cssClasses = settings.cssClasses || {};
 	var taxSettings = settings.tax || {};
 	var taxDisplayCart = (taxSettings && typeof taxSettings.displayCart === 'string') ? taxSettings.displayCart : '';
@@ -386,6 +387,72 @@ export function createRenderer(options) {
 		afterActions: createHookTemplate(hooksHtml.afterActions),
 		afterFirstItem: createHookTemplate(hooksHtml.afterFirstItem)
 	};
+
+	// Shipping progress bar: sanitized config templates + threshold in major units.
+	var shippingProgressEnabled = (typeof shippingProgressSettings.enabled === 'boolean') ? shippingProgressSettings.enabled : false;
+	var shippingProgressThreshold = parseFloat(shippingProgressSettings.threshold);
+	if (isNaN(shippingProgressThreshold) || shippingProgressThreshold < 0) {
+		shippingProgressThreshold = 0;
+	}
+	var shippingProgressTemplates = {
+		pending: createHookTemplate(shippingProgressSettings.textPending),
+		reached: createHookTemplate(shippingProgressSettings.textReached)
+	};
+
+	function buildShippingProgressBlock(cart) {
+		if (!shippingProgressEnabled || shippingProgressThreshold <= 0) {
+			return null;
+		}
+
+		var totals = cart && cart.totals ? cart.totals : {};
+		var totalItems = parseInt(totals.total_items, 10);
+		if (isNaN(totalItems)) {
+			totalItems = 0;
+		}
+		var minorUnit = parseInt(totals.currency_minor_unit, 10);
+		if (isNaN(minorUnit) || minorUnit < 0) {
+			minorUnit = 2;
+		}
+		var thresholdSubunits = Math.round(shippingProgressThreshold * Math.pow(10, minorUnit));
+		if (thresholdSubunits <= 0) {
+			return null;
+		}
+
+		var isReached = totalItems >= thresholdSubunits;
+		var textTemplate = isReached ? shippingProgressTemplates.reached : shippingProgressTemplates.pending;
+
+		var block = document.createElement('div');
+		block.className = 'wcsc-shipping-progress' + (isReached ? ' wcsc-shipping-progress--reached' : '');
+
+		if (textTemplate) {
+			var text = document.createElement('div');
+			text.className = 'wcsc-shipping-progress__text';
+			text.appendChild(textTemplate.content.cloneNode(true));
+
+			// Fill every amount slot with the formatted remaining value (cleared when reached).
+			var slots = text.querySelectorAll('[data-wcsc-amount]');
+			if (slots.length) {
+				var remaining = Math.max(0, thresholdSubunits - totalItems);
+				var amountText = isReached ? '' : moneyFormatValue(String(remaining), totals);
+				for (var i = 0; i < slots.length; i++) {
+					slots[i].textContent = amountText;
+				}
+			}
+			block.appendChild(text);
+		}
+
+		var bar = document.createElement('div');
+		bar.className = 'wcsc-shipping-progress__bar';
+		bar.setAttribute('aria-hidden', 'true');
+		var fill = document.createElement('div');
+		fill.className = 'wcsc-shipping-progress__fill';
+		var pct = Math.max(0, Math.min(100, Math.round((totalItems / thresholdSubunits) * 100)));
+		fill.style.width = pct + '%';
+		bar.appendChild(fill);
+		block.appendChild(bar);
+
+		return block;
+	}
 
 	function appendHook(targetNode, template, wrapperClass) {
 		if (!targetNode || !template) {
@@ -873,6 +940,11 @@ export function createRenderer(options) {
 
 		var fragment = document.createDocumentFragment();
 		appendHook(fragment, hookTemplates.aboveItems, 'wcsc-hook--above-items');
+
+		var progressBlock = buildShippingProgressBlock(cart);
+		if (progressBlock) {
+			fragment.appendChild(progressBlock);
+		}
 
 		var hierarchy = buildHierarchy(items);
 		var entries = hierarchy.entries || {};

@@ -30,6 +30,15 @@ return array(
 		'badgeElementId' => '',
 		'autoOpenOnAddToCart' => true,
 	),
+	// Shipping progress bar: threshold in major currency units (0 = disabled).
+	// textPending/textReached accept sanitized HTML; the [data-wcsc-amount] element
+	// receives the remaining amount formatted for the store currency.
+	'shippingProgress' => array(
+		'enabled'     => false,
+		'threshold'   => 0,
+		'textPending' => 'Ti mancano <strong data-wcsc-amount></strong> per la spedizione gratuita!',
+		'textReached' => '<strong>Spedizione gratuita sbloccata!</strong>',
+	),
 	'cssClasses' => array(
 		'panel' => '',
 		'backdrop' => '',

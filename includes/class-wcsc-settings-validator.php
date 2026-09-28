@@ -219,6 +219,28 @@ class WCSC_SettingsValidator {
 
 		$cssClasses = isset( $config['cssClasses'] ) && is_array( $config['cssClasses'] ) ? $config['cssClasses'] : array();
 
+		$shippingProgress = array(
+			'enabled'     => false,
+			'threshold'   => 0.0,
+			'textPending' => '',
+			'textReached' => '',
+		);
+		if ( isset( $config['shippingProgress'] ) && is_array( $config['shippingProgress'] ) ) {
+			if ( isset( $config['shippingProgress']['enabled'] ) ) {
+				$shippingProgress['enabled'] = (bool) $config['shippingProgress']['enabled'];
+			}
+			if ( isset( $config['shippingProgress']['threshold'] ) && is_numeric( $config['shippingProgress']['threshold'] ) ) {
+				$threshold = (float) $config['shippingProgress']['threshold'];
+				$shippingProgress['threshold'] = $threshold > 0 ? $threshold : 0.0;
+			}
+			if ( isset( $config['shippingProgress']['textPending'] ) ) {
+				$shippingProgress['textPending'] = $this->hooksHtmlSanitizer->sanitizeString( $config['shippingProgress']['textPending'], 'strict' );
+			}
+			if ( isset( $config['shippingProgress']['textReached'] ) ) {
+				$shippingProgress['textReached'] = $this->hooksHtmlSanitizer->sanitizeString( $config['shippingProgress']['textReached'], 'strict' );
+			}
+		}
+
 		// Ensure hooksHtml keys exist even if a filter returned a partial map.
 		$hooksHtml = is_array( $hooksHtml ) ? $hooksHtml : array();
 		$hooksHtml = array_merge(
@@ -239,6 +261,7 @@ class WCSC_SettingsValidator {
 			'dom' => $dom,
 			'ui' => $ui,
 			'cssClasses' => $cssClasses,
+			'shippingProgress' => $shippingProgress,
 			'hooksHtml' => $hooksHtml,
 			'hooksContext' => is_array( $hooksContext ) ? $hooksContext : array(),
 		);

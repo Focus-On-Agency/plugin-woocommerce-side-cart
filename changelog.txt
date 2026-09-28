@@ -1,5 +1,10 @@
 *** WooCommerce Side Cart ***
 
+2026.09.28 - version 3.4.0
+ * Feature: optional shipping progress bar (free-shipping goal) rendered above the items list via new config group `shippingProgress` (enabled, threshold, textPending, textReached).
+ * Feature: progress texts accept sanitized HTML (strict policy) with `[data-wcsc-amount]` slots auto-filled with the formatted remaining amount; the bar turns green when the threshold is reached.
+ * Dev: WCSC_HooksHtmlSanitizer now exposes a public `sanitizeString()` helper; `shippingProgress` is whitelisted in client settings.
+
 2026.07.28 - version 3.3.5
  * Fix: apply/remove coupon now prefer the WooCommerce session/nonce over persisted Cart-Token (aligns coupon mutations with update/remove item) to keep discounts applied at Checkout (Classic + Blocks).
 
